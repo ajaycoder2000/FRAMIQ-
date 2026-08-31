@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In — FarmIQ Farmer App</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<main id="main">
+<section class="hero" style="padding-bottom:20px">
+  <div class="container auth-card">
+    <div class="text-center" style="margin-bottom:28px">
+      <span class="eyebrow">🧑‍🌾 Farmer App</span>
+      <h1 style="font-size:2rem">Sign in to your farm</h1>
+      <p>Unlocks location-based weather, crop advisory, and Farm Assistant.</p>
+    </div>
+
+    <div class="card">
+      <form id="farmiq-login-form" novalidate>
+        <div class="form-field">
+          <label for="fname">Farmer name</label>
+          <input type="text" id="fname" name="fname" autocomplete="name" required>
+          <p class="error-text" id="err-fname">Please enter your name.</p>
+        </div>
+        <div class="form-field">
+          <label for="femail">Email</label>
+          <input type="email" id="femail" name="femail" autocomplete="email" required>
+          <p class="error-text" id="err-femail">Please enter a valid email.</p>
+        </div>
+        <div class="form-field">
+          <label for="fpassword">Password</label>
+          <input type="password" id="fpassword" name="fpassword" autocomplete="current-password" required minlength="6">
+          <p class="error-text" id="err-fpassword">Password must be at least 6 characters.</p>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Sign in</button>
+      </form>
+
+      <div class="divider">or</div>
+
+      <button type="button" class="btn btn-outline btn-block" id="google-signin">
+        <span aria-hidden="true">🔐</span> Sign in with Google
+      </button>
+
+      <p class="form-note text-center" style="margin-top:18px" id="auth-status" role="status"></p>
+    </div>
+
+    <div class="card" style="margin-top:20px;background:var(--bg-alt)">
+      <h3 style="font-size:1rem">Signing in unlocks:</h3>
+      <ul class="price-list">
+        <li>Location-based 15-day weather</li>
+        <li>Crop-specific daily advisory</li>
+        <li>Farm Assistant chat</li>
+      </ul>
+      <p class="form-note mb-0">Demo authentication for this MVP — stored locally in your browser only. Production would use Firebase Auth, Supabase Auth, or a similar secure backend.</p>
+    </div>
+  </div>
+</section>
+</main>
+<script src="assets/js/script.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const form = document.getElementById('farmiq-login-form');
+  const status = document.getElementById('auth-status');
+
+  function signInAs(name, email) {
+    localStorage.setItem('farmiq_authed', 'true');
+    localStorage.setItem('farmiq_user', JSON.stringify({ name, email }));
+    status.textContent = 'Signed in. Redirecting to your Weather & Advisory dashboard…';
+    setTimeout(() => { window.location.href = 'weather.html'; }, 700);
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    let valid = true;
+    const name = document.getElementById('fname');
+    const email = document.getElementById('femail');
+    const pass = document.getElementById('fpassword');
+
+    document.getElementById('err-fname').classList.remove('show');
+    document.getElementById('err-femail').classList.remove('show');
+    document.getElementById('err-fpassword').classList.remove('show');
+
+    if (!name.value.trim()) { document.getElementById('err-fname').classList.add('show'); valid = false; }
+    if (!/^\S+@\S+\.\S+$/.test(email.value)) { document.getElementById('err-femail').classList.add('show'); valid = false; }
+    if (pass.value.length < 6) { document.getElementById('err-fpassword').classList.add('show'); valid = false; }
+
+    if (!valid) return;
+    signInAs(name.value.trim(), email.value.trim());
+  });
+
+  document.getElementById('google-signin').addEventListener('click', () => {
+    // Demo-only stand-in. Real Google sign-in requires OAuth/Firebase/Supabase setup on a backend.
+    signInAs('Google Farmer', 'demo.farmer@gmail.com');
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FAQ — FarmIQ</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<main id="main">
+<section class="hero" style="padding-bottom:20px">
+  <div class="container text-center">
+    <span class="eyebrow">❓ FAQ</span>
+    <h1>Questions farmers actually ask</h1>
+  </div>
+</section>
+
+<section>
+  <div class="container" style="max-width:760px">
+    <div id="main-faq">
+
+      <div class="accordion-item">
+        <button class="accordion-q" aria-expanded="false">How much does FarmIQ cost? <span class="accordion-icon">+</span></button>
+        <div class="accordion-a"><div class="accordion-a-inner">Free basic weather, then a flat $7/month, $45/season, or $65/year for full 15-day forecasts, crop advisory, and Farm Assistant. No enterprise tiers, ever. See <a href="pricing.html">Pricing</a>.</div></div>
+      </div>
+
+      <div class="accordion-item">
+        <button class="accordion-q" aria-expanded="false">What do you do with my location data? <span class="accordion-icon">+</span></button>
+        <div class="accordion-a"><div class="accordion-a-inner">Your location is used only to fetch your forecast from Open-Meteo and is stored locally in your browser. We don't sell or share it with third parties, and you can use manual location entry instead of browser geolocation at any time.</div></div>
+      </div>
+
+      <div class="accordion-item">
+        <button class="accordion-q" aria-expanded="false">How accurate are the forecasts? <span class="accordion-icon">+</span></button>
+        <div class="accordion-a"><div class="accordion-a-inner">Forecast data comes from Open-Meteo, a public weather API blending multiple national weather models. Accuracy is highest in the first 7 days and decreases toward day 15, same as any forecast provider — we surface rain probability, not just totals, so you can judge confidence.</div></div>
+      </div>
+
+      <div class="accordion-item">
+        <button class="accordion-q" aria-expanded="false">Which crops are supported? <span class="accordion-icon">+</span></button>
+        <div class="accordion-a"><div class="accordion-a-inner">Corn, Soybeans, Wheat, Vegetables, and Grapes at launch, each with meaningfully different advisory logic (e.g. grape heat/irrigation sensitivity vs. wheat harvest timing). More crops are on the roadmap.</div></div>
+      </div>
+
+      <div class="accordion-item">
+        <button class="accordion-q" aria-expanded="false">Which regions do you cover? <span class="accordion-icon">+</span></button>
+        <div class="accordion-a"><div class="accordion-a-inner">Anywhere Open-Meteo has coverage — in practice, the US and Europe, our initial target markets. Just enable location or enter coordinates manually.</div></div>
+      </div>
+
+      <div class="accordion-item">
+        <button class="accordion-q" aria-expanded="false">Do you sell my data or show ads? <span class="accordion-icon">+</span></button>
+        <div class="accordion-a"><div class="accordion-a-inner">No. No ads, no data-selling, no middleman. FarmIQ answers only to the farmer paying for it.</div></div>
+      </div>
+
+      <div class="accordion-item">
+        <button class="accordion-q" aria-expanded="false">Is the Farm Assistant a real AI? <span class="accordion-icon">+</span></button>
+        <div class="accordion-a"><div class="accordion-a-inner">In this MVP, Farm Assistant uses local rule-based logic grounded in your crop and forecast. A future version will connect to a real LLM through a secure backend, so no API keys are ever exposed in the browser.</div></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+</main>
+<script src="assets/js/script.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('#main-faq .accordion-q').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = btn.closest('.accordion-item');
+      const isOpen = item.classList.toggle('open');
+      btn.setAttribute('aria-expanded', String(isOpen));
+    });
+  });
+});
+</script>
+</body>
+</html>

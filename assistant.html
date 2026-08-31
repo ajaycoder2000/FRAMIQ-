@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Farm Assistant — FarmIQ</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<main id="main">
+
+<section id="assistant-locked" class="hero" hidden>
+  <div class="container locked-panel card">
+    <div class="ico">🔒</div>
+    <h2>Farm Assistant unlocks after signing in</h2>
+    <p>Get quick, crop-specific answers grounded in your live forecast and location.</p>
+    <a href="app.html" class="btn btn-primary">Sign in to Farmer App</a>
+  </div>
+</section>
+
+<section id="assistant-unlocked" hidden>
+  <div class="container" style="max-width:780px">
+    <span class="eyebrow">🧑‍🌾 Farm Assistant</span>
+    <h1 style="font-size:2.1rem">Ask about your crop, your weather, your farm</h1>
+    <p class="hero-sub">Answers are generated locally from your selected crop and current forecast for this MVP — no data leaves your browser.</p>
+
+    <div class="card" style="margin-top:20px">
+      <div class="dash-row">
+        <span class="pill" id="assistant-crop-pill">Crop: —</span>
+        <a href="weather.html" class="pill" style="text-decoration:none">Change crop / location →</a>
+      </div>
+      <div class="chat-window" id="chat-window" aria-live="polite"></div>
+      <form class="chat-input-row" id="chat-form">
+        <label for="chat-input" class="visually-hidden" style="position:absolute;left:-9999px">Message</label>
+        <input type="text" id="chat-input" placeholder="e.g. Should I irrigate this week?" autocomplete="off" required>
+        <button type="submit" class="btn btn-primary">Send</button>
+      </form>
+    </div>
+
+    <div class="card" style="margin-top:20px;background:var(--bg-alt)">
+      <p class="form-note mb-0">This MVP uses local rule-based responses via a single <code>getAssistantResponse()</code> hook. A production build would call a backend endpoint (never an LLM API directly from the browser) so API keys stay server-side.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+<script src="assets/js/script.js"></script>
+<script src="assets/js/weather.js"></script>
+<script src="assets/js/assistant.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  farmiqRequireAuthUI(document.getElementById('assistant-locked'), document.getElementById('assistant-unlocked'));
+  if (!farmiqIsAuthed()) return;
+
+  const crop = localStorage.getItem('farmiq_crop') || 'grapes';
+  document.getElementById('assistant-crop-pill').textContent = `Crop: ${FARMIQ_CROPS[crop].icon} ${FARMIQ_CROPS[crop].label}`;
+
+  const chatWindow = document.getElementById('chat-window');
+  const form = document.getElementById('chat-form');
+  const input = document.getElementById('chat-input');
+
+  function appendMsg(text, who) {
+    const div = document.createElement('div');
+    div.className = `msg ${who}`;
+    div.textContent = text;
+    chatWindow.appendChild(div);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
+
+  const loc = farmiqGetLocation();
+  appendMsg(`Hi! I'm your Farm Assistant for ${FARMIQ_CROPS[crop].label}${loc ? ' at ' + loc.label : ''}. Ask me anything about irrigation, heat, harvest timing, wind, or disease risk.`, 'bot');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+    appendMsg(text, 'user');
+    input.value = '';
+    const context = { crop, location: loc, days: window.__farmiqDays || [] };
+    const reply = await getAssistantResponse(text, context);
+    appendMsg(reply, 'bot');
+  });
+});
+</script>
+</body>
+</html>

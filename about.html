@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About & Investors — FarmIQ</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<main id="main">
+<section class="hero" style="padding-bottom:20px">
+  <div class="container">
+    <span class="eyebrow">🌱 About FarmIQ</span>
+    <h1 style="font-size:2rem">Built for the farmer left out of the enterprise bundle</h1>
+    <p class="hero-sub">This page is for growers who want the full picture, and for investors evaluating the company. Farmer-facing product stays the focus — this is the supporting detail.</p>
+  </div>
+</section>
+
+<section>
+  <div class="container" style="max-width:880px">
+
+    <div class="card" style="margin-bottom:20px">
+      <h2>Core Pitch</h2>
+      <p>Small and mid-size farms, specialty growers, and vineyards are priced out of or underserved by large bundled ag-tech platforms — Climate FieldView, John Deere Ops Center, Xarvio — which are built around equipment ecosystems, dealer relationships, or enterprise contracts. FarmIQ answers only to the farmer paying for it: a focused weather and advisory product, priced low, sold direct.</p>
+    </div>
+
+    <div class="card" style="margin-bottom:20px">
+      <h2>Technical Feasibility & Stack</h2>
+      <p>The MVP is a static, multi-page frontend (HTML/CSS/vanilla JS) using Open-Meteo for forecast data and a local rule-based advisory/assistant engine — no backend required to demonstrate the core product loop. Production would move auth to Firebase/Supabase, add a lightweight backend for the Farm Assistant (proxying an LLM API so keys never touch the browser), and layer in a proper crop-advisory rules service or model.</p>
+    </div>
+
+    <div class="card" style="margin-bottom:20px">
+      <h2>Go-to-Market Strategy</h2>
+      <p>Farmer-to-farmer channels only, deliberately skipping co-op and distributor partnerships that would reintroduce middleman economics:</p>
+      <ul class="price-list">
+        <li>Reddit farming communities (r/farming, r/vineyard, r/agriculture)</li>
+        <li>Regional Facebook farming groups</li>
+        <li>Ag YouTube and TikTok creators</li>
+        <li>Regional farm shows and field days</li>
+      </ul>
+    </div>
+
+    <div class="card" style="margin-bottom:20px">
+      <h2>Alternative Monetization</h2>
+      <p>Freemium free tier, a low flat monthly subscription, and a seasonal/annual option for growers who'd rather pay once per growing season. No enterprise or per-seat pricing — kept intentionally simple.</p>
+    </div>
+
+    <div class="card">
+      <h2>MVP Roadmap</h2>
+      <ul class="price-list">
+        <li>Static MVP: multi-page site, local auth, Open-Meteo forecast, rule-based advisory (this build)</li>
+        <li>Backend auth (Firebase/Supabase) + persistent user profiles</li>
+        <li>Farm Assistant backed by a real LLM via a secure backend endpoint</li>
+        <li>Push/SMS alerts for high-risk advisory events</li>
+        <li>Expanded crop library and regional forecast tuning</li>
+      </ul>
+    </div>
+
+  </div>
+</section>
+</main>
+<script src="assets/js/script.js"></script>
+</body>
+</html>

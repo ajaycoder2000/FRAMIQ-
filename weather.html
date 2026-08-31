@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weather & Advisory — FarmIQ</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<main id="main">
+
+<section id="weather-locked" class="hero" hidden>
+  <div class="container locked-panel card">
+    <div class="ico">🔒</div>
+    <h2>Sign in to see your forecast</h2>
+    <p>Weather & Advisory unlocks after you sign in — it's free to try.</p>
+    <a href="app.html" class="btn btn-primary">Sign in to Farmer App</a>
+  </div>
+</section>
+
+<section id="weather-unlocked" hidden>
+  <div class="container">
+    <span class="eyebrow">🛰️ Weather & Advisory</span>
+    <h1 style="font-size:2.1rem">Your 15-day forecast</h1>
+    <p class="hero-sub">Select your crop and location to get a tailored forecast and daily advisory.</p>
+
+    <div class="card" style="margin-top:20px">
+      <div class="card-grid grid-2" style="align-items:end">
+        <div class="form-field mb-0">
+          <label for="crop-select">Crop</label>
+          <select id="crop-select">
+            <option value="corn">🌽 Corn</option>
+            <option value="soybeans">🫘 Soybeans</option>
+            <option value="wheat">🌾 Wheat</option>
+            <option value="vegetables">🥦 Vegetables</option>
+            <option value="grapes" selected>🍇 Grapes</option>
+          </select>
+        </div>
+        <div>
+          <button class="btn btn-outline btn-block" id="geo-btn">📍 Use my location</button>
+        </div>
+      </div>
+
+      <div id="manual-location" style="margin-top:18px">
+        <div class="card-grid grid-2">
+          <div class="form-field mb-0">
+            <label for="manual-lat">Latitude</label>
+            <input type="text" id="manual-lat" placeholder="e.g. 38.5025">
+          </div>
+          <div class="form-field mb-0">
+            <label for="manual-lon">Longitude</label>
+            <input type="text" id="manual-lon" placeholder="e.g. -122.4058">
+          </div>
+        </div>
+        <button class="btn btn-gold btn-sm" id="manual-load-btn" style="margin-top:12px">Load forecast for this location</button>
+        <p class="form-note">GDPR note: location is used only to fetch your forecast and is stored solely in your browser (localStorage). It is never sent to a third party beyond the weather provider (Open-Meteo) needed to serve your forecast.</p>
+      </div>
+
+      <p id="weather-status" class="form-note" role="status"></p>
+    </div>
+
+    <div id="weather-results" hidden>
+      <div class="card" style="margin-top:24px">
+        <div class="dash-row">
+          <h3 class="mb-0">15-Day Forecast <span id="loc-label" class="pill" style="margin-left:8px"></span></h3>
+        </div>
+        <div class="forecast-scroll" id="forecast-scroll"></div>
+      </div>
+
+      <div class="card" style="margin-top:24px">
+        <h3><span id="advisory-crop-icon"></span> Daily Advisory</h3>
+        <ul class="price-list" id="advisory-list"></ul>
+        <a href="assistant.html" class="btn btn-outline btn-sm" style="margin-top:8px">Ask Farm Assistant a follow-up →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+<script src="assets/js/script.js"></script>
+<script src="assets/js/weather.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  farmiqRequireAuthUI(document.getElementById('weather-locked'), document.getElementById('weather-unlocked'));
+  if (!farmiqIsAuthed()) return;
+
+  const cropSelect = document.getElementById('crop-select');
+  const status = document.getElementById('weather-status');
+  const resultsEl = document.getElementById('weather-results');
+  const forecastScroll = document.getElementById('forecast-scroll');
+  const advisoryList = document.getElementById('advisory-list');
+  const locLabel = document.getElementById('loc-label');
+  const advisoryIcon = document.getElementById('advisory-crop-icon');
+
+  const savedCrop = localStorage.getItem('farmiq_crop');
+  if (savedCrop) cropSelect.value = savedCrop;
+  cropSelect.addEventListener('change', () => {
+    localStorage.setItem('farmiq_crop', cropSelect.value);
+    renderForCurrentLocation();
+  });
+
+  async function loadAndRender(lat, lon, label) {
+    status.textContent = 'Loading forecast…';
+    try {
+      const data = await farmiqFetchForecast(lat, lon);
+      const days = farmiqBuildDays(data);
+      window.__farmiqDays = days;
+      renderForecast(days);
+      renderAdvisory(cropSelect.value, days);
+      locLabel.textContent = label;
+      resultsEl.hidden = false;
+      status.textContent = '';
+      farmiqSaveLocation(lat, lon, label);
+    } catch (err) {
+      status.textContent = 'Could not load forecast. Please check your location and try again.';
+    }
+  }
+
+  function renderForCurrentLocation() {
+    const loc = farmiqGetLocation();
+    if (loc) loadAndRender(loc.lat, loc.lon, loc.label);
+  }
+
+  function renderForecast(days) {
+    forecastScroll.innerHTML = days.map(d => {
+      const dt = new Date(d.date);
+      const wd = dt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+      return `<div class="forecast-day">
+        <div class="d">${wd}</div>
+        <div class="t">${d.tMax}° / ${d.tMin}°</div>
+        <div class="meta">💧 ${d.rain}mm · ${d.rainProb}%<br>💨 ${d.wind} km/h</div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderAdvisory(crop, days) {
+    advisoryIcon.textContent = FARMIQ_CROPS[crop].icon;
+    const notes = farmiqAdvisory(crop, days);
+    advisoryList.innerHTML = notes.map(n => `<li>${n}</li>`).join('');
+  }
+
+  document.getElementById('geo-btn').addEventListener('click', () => {
+    if (!navigator.geolocation) {
+      status.textContent = 'Geolocation not supported in this browser — use manual location below.';
+      return;
+    }
+    status.textContent = 'Requesting location permission…';
+    navigator.geolocation.getCurrentPosition(
+      (pos) => loadAndRender(pos.coords.latitude, pos.coords.longitude, 'Your location'),
+      () => { status.textContent = 'Location permission denied — enter coordinates manually below.'; }
+    );
+  });
+
+  document.getElementById('manual-load-btn').addEventListener('click', () => {
+    const lat = parseFloat(document.getElementById('manual-lat').value);
+    const lon = parseFloat(document.getElementById('manual-lon').value);
+    if (isNaN(lat) || isNaN(lon)) {
+      status.textContent = 'Enter valid latitude and longitude values.';
+      return;
+    }
+    loadAndRender(lat, lon, `${lat.toFixed(2)}, ${lon.toFixed(2)}`);
+  });
+
+  renderForCurrentLocation();
+});
+</script>
+</body>
+</html>

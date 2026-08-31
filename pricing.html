@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pricing — FarmIQ</title>
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+<main id="main">
+<section class="hero" style="padding-bottom:20px">
+  <div class="container text-center">
+    <span class="eyebrow">💧 Honest Pricing</span>
+    <h1>Priced for the farmer using it — not a bundle you didn't ask for</h1>
+    <p class="hero-sub" style="margin:0 auto">No enterprise tiers. No ads. No data-selling. Just weather intelligence and crop advisory at a price that makes sense for one farm.</p>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="card-grid grid-3">
+      <div class="card price-card">
+        <h3>Free</h3>
+        <div class="price-amount">$0<span>/forever</span></div>
+        <p>Basic weather to get a feel for FarmIQ.</p>
+        <ul class="price-list">
+          <li>3-day weather forecast</li>
+          <li>1 crop profile</li>
+          <li>Manual or auto location</li>
+        </ul>
+        <a href="app.html" class="btn btn-outline btn-block">Start free</a>
+      </div>
+
+      <div class="card price-card featured">
+        <span class="price-badge">Most Popular</span>
+        <h3>Full Advisory — Monthly</h3>
+        <div class="price-amount">$7<span>/month</span></div>
+        <p>Everything a working farm needs, billed monthly.</p>
+        <ul class="price-list">
+          <li>Full 15-day forecast</li>
+          <li>Crop-specific daily advisory</li>
+          <li>Farm Assistant chat</li>
+          <li>All 5 supported crops</li>
+        </ul>
+        <a href="app.html" class="btn btn-primary btn-block">Get full access</a>
+      </div>
+
+      <div class="card price-card">
+        <h3>Full Advisory — Seasonal</h3>
+        <div class="price-amount">$45<span>/season</span></div>
+        <p>Pay once for a growing season (~6 months). Best value for planned use.</p>
+        <ul class="price-list">
+          <li>Everything in Monthly</li>
+          <li>~35% cheaper than paying monthly</li>
+          <li>One payment, no auto-renew surprises</li>
+        </ul>
+        <a href="app.html" class="btn btn-outline btn-block">Choose seasonal</a>
+      </div>
+    </div>
+
+    <div class="card text-center" style="margin-top:24px">
+      <h3>Annual</h3>
+      <div class="price-amount" style="margin:0 auto">$65<span>/year</span></div>
+      <p class="mb-0">For growers who want it year-round, priced lower than two seasonal passes.</p>
+    </div>
+
+    <div class="card" style="margin-top:24px;text-align:center;background:var(--bg-alt)">
+      <p class="mb-0" style="font-weight:600;color:var(--text)">🌾 No enterprise tiers. No per-seat pricing. No sales calls. Just a farmer and a forecast.</p>
+    </div>
+  </div>
+</section>
+
+<section style="background:var(--bg-alt)">
+  <div class="container" style="max-width:760px">
+    <div class="section-head">
+      <span class="eyebrow">Billing FAQ</span>
+      <h2>Quick answers</h2>
+    </div>
+    <div id="billing-faq">
+      <div class="accordion-item">
+        <button class="accordion-q" aria-expanded="false">Can I cancel anytime? <span class="accordion-icon">+</span></button>
+        <div class="accordion-a"><div class="accordion-a-inner">Yes — monthly plans cancel anytime with no penalty. Seasonal and annual passes are prepaid and non-recurring.</div></div>
+      </div>
+      <div class="accordion-item">
+        <button class="accordion-q" aria-expanded="false">Do you offer refunds? <span class="accordion-icon">+</span></button>
+        <div class="accordion-a"><div class="accordion-a-inner">If FarmIQ isn't working for you within the first 14 days, contact support@farmiq.app for a full refund.</div></div>
+      </div>
+      <div class="accordion-item">
+        <button class="accordion-q" aria-expanded="false">Is there a free trial of the paid tier? <span class="accordion-icon">+</span></button>
+        <div class="accordion-a"><div class="accordion-a-inner">The Free tier lets you try the platform indefinitely at a reduced feature set — no credit card required to start.</div></div>
+      </div>
+      <div class="accordion-item">
+        <button class="accordion-q" aria-expanded="false">Do you offer discounts for multiple farms? <span class="accordion-icon">+</span></button>
+        <div class="accordion-a"><div class="accordion-a-inner">FarmIQ is priced per farmer, not per acre or per seat — we intentionally don't build enterprise/multi-site tiers.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+<script src="assets/js/script.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('#billing-faq .accordion-q').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item = btn.closest('.accordion-item');
+      const isOpen = item.classList.toggle('open');
+      btn.setAttribute('aria-expanded', String(isOpen));
+    });
+  });
+});
+</script>
+</body>
+</html>
