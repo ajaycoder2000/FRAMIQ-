@@ -107,6 +107,12 @@
         <ul class="price-list" id="advisory-list"></ul>
         <a href="assistant.html" class="btn btn-ghost btn-sm" style="margin-top:8px">Ask Farm Assistant a follow-up →</a>
       </div>
+
+      <div class="card" style="margin-top:24px" id="agro-card">
+        <h3>🌱 Agronomic Summary <span class="form-note" style="font-weight:400">— next 7 days</span></h3>
+        <div class="grid g-4" id="agro-grid" style="margin-top:14px"></div>
+        <p class="form-note mb-0" style="margin-top:14px">ET₀ is reference crop water use (FAO-56 Penman-Monteith). Soil readings are at 6cm depth; GDD is projected forward over the forecast window, not season-to-date.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -179,10 +185,11 @@ function initWeatherPage() {
     forecastScroll.innerHTML = days.map(d => {
       const dt = new Date(d.date);
       const wd = dt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+      const et0Line = d.et0 != null ? `<br>🌿 ET₀ ${farmiqRain(d.et0)}${farmiqRainUnit()}` : '';
       return `<div class="forecast-day">
         <div class="d">${wd}</div>
         <div class="t">${farmiqTemp(d.tMax)}° / ${farmiqTemp(d.tMin)}°</div>
-        <div class="meta">💧 ${farmiqRain(d.rain)}${farmiqRainUnit()} · ${d.rainProb}%<br>💨 ${farmiqWind(d.wind)} ${farmiqWindUnit()}</div>
+        <div class="meta">💧 ${farmiqRain(d.rain)}${farmiqRainUnit()} · ${d.rainProb}%<br>💨 ${farmiqWind(d.wind)} ${farmiqWindUnit()}${et0Line}</div>
       </div>`;
     }).join('');
   }
@@ -191,6 +198,52 @@ function initWeatherPage() {
     advisoryIcon.textContent = FARMIQ_CROPS[crop].icon;
     const notes = farmiqAdvisory(crop, days);
     advisoryList.innerHTML = notes.map(n => `<li>${n}</li>`).join('');
+    renderAgroSummary(crop, days);
+  }
+
+  function renderAgroSummary(crop, days) {
+    const grid = document.getElementById('agro-grid');
+    const next7 = days.slice(0, 7);
+    const today = days[0];
+
+    const et0Days = next7.filter(d => d.et0 != null);
+    const totalRain7 = next7.reduce((s, d) => s + d.rain, 0);
+    const totalET0 = et0Days.length ? et0Days.reduce((s, d) => s + d.et0, 0) : null;
+    const deficit = totalET0 != null ? Math.round(totalET0 - totalRain7) : null;
+
+    const gdd = farmiqProjectedGDD(crop, days);
+    const gdd7 = gdd[Math.min(6, gdd.length - 1)];
+
+    const tiles = [
+      {
+        label: 'Water balance, 7d',
+        value: deficit != null ? `${deficit > 0 ? '−' : '+'}${farmiqRain(Math.abs(deficit))}${farmiqRainUnit()}` : '—',
+        note: deficit != null ? (deficit > 0 ? 'net deficit (irrigate)' : 'net surplus') : 'ET₀ unavailable',
+      },
+      {
+        label: 'Soil temp (6cm)',
+        value: today.soilTemp != null ? `${farmiqTemp(today.soilTemp)}${farmiqTempUnit()}` : '—',
+        note: 'today, average',
+      },
+      {
+        label: 'Soil moisture',
+        value: today.soilMoisture != null ? `${today.soilMoisture}%` : '—',
+        note: '3–9cm depth',
+      },
+      {
+        label: 'Projected GDD',
+        value: gdd7 != null ? `${gdd7}` : '—',
+        note: 'accumulated, 7d',
+      },
+    ];
+
+    grid.innerHTML = tiles.map(t => `
+      <div class="card solid" style="padding:16px">
+        <div class="form-note mb-0" style="text-transform:uppercase;letter-spacing:.06em;font-size:.7rem">${t.label}</div>
+        <div style="font-family:var(--font-display);font-size:1.5rem;font-weight:600;margin:6px 0 2px">${t.value}</div>
+        <div class="form-note mb-0">${t.note}</div>
+      </div>
+    `).join('');
   }
 
   document.getElementById('geo-btn').addEventListener('click', () => {

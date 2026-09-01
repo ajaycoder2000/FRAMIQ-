@@ -36,7 +36,11 @@ function summarizeForecast(days, imperial) {
 
   const lines = days.slice(0, 7).map((d) => {
     const date = String(d.date || '').slice(0, 10);
-    return `${date}: high ${t(d.tMax)}${tU}, low ${t(d.tMin)}${tU}, rain ${r(d.rain)}${rU} (${d.rainProb}% chance), wind ${w(d.wind)} ${wU}`;
+    const soil = d.soilTemp != null ? `, soil ${t(d.soilTemp)}${tU} @6cm` : '';
+    const moisture = d.soilMoisture != null ? `, soil moisture ${d.soilMoisture}%` : '';
+    const et0 = d.et0 != null ? `, ET0 ${r(d.et0)}${rU}` : '';
+    const vpd = d.vpd != null ? `, VPD ${d.vpd}kPa` : '';
+    return `${date}: high ${t(d.tMax)}${tU}, low ${t(d.tMin)}${tU}, rain ${r(d.rain)}${rU} (${d.rainProb}% chance), wind ${w(d.wind)} ${wU}${soil}${moisture}${et0}${vpd}`;
   });
   return lines.join('\n');
 }
@@ -52,12 +56,19 @@ THE FARMER'S CONTEXT
 - Crop: ${cropLabel}
 - Location: ${place}
 - Preferred units: ${imperial ? 'imperial (°F, inches, mph)' : 'metric (°C, mm, km/h)'} — always answer in these units
-- Next 7 days of forecast:
+- Next 7 days of forecast, with agronomic data where available:
 ${summarizeForecast(days, imperial)}
 
+READING THE AGRONOMIC FIELDS
+- ET0 is reference evapotranspiration (FAO-56 Penman-Monteith) — how much water a well-watered reference crop loses that day. Compare it against rainfall for that day or the week to judge irrigation need: rain well below ET0 across several days means a real water deficit is building.
+- Soil temperature (@6cm) governs germination, not air temperature. Corn and soybeans want roughly 10°C+, wheat is fine much cooler, most vegetables want 13°C+. Below threshold means poor emergence if planting now.
+- Soil moisture is volumetric (%). Falling steadily alongside a growing ET0-rain deficit reinforces an irrigation call; don't treat one reading alone as conclusive.
+- VPD (vapour pressure deficit, kPa) below ~0.6 means humid, slow-drying conditions — favours fungal disease, worth flagging for wet-prone crops. Above ~1.8 means the air is pulling moisture hard — sprays evaporate fast and drift risk rises, and crop water demand climbs even without extreme heat.
+- Not every day will have every field — some data sources have gaps. Only reason from a field for the day(s) where it's actually present.
+
 HOW TO ANSWER
-- Be concise and practical: 2-4 sentences for simple questions. This farmer is often reading on a phone, outdoors, mid-task.
-- Ground your answer in the forecast above whenever the question touches weather, irrigation, spraying, disease pressure or harvest timing. Cite the actual numbers.
+- Be concise and practical: 2-4 sentences for simple questions. This farmer is often reading on a phone, outdoors, mid-task. Don't hedge with lengthy caveats when the forecast data gives you a clear answer.
+- Ground your answer in the forecast above whenever the question touches weather, irrigation, spraying, disease pressure or harvest timing. Cite the actual numbers, including agronomic fields when they're the more precise signal (e.g. prefer an ET0-vs-rain deficit over a vague "it's been dry").
 - Tailor advice to ${cropLabel} specifically. Growth-stage sensitivities differ sharply between crops — corn at silking, wheat near harvest, grapes near veraison.
 - Plain language, no marketing tone, no bullet lists unless genuinely clearer.
 

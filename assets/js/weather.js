@@ -63,15 +63,42 @@ const FARMIQ_CROPS = {
 
 async function farmiqFetchForecast(lat, lon) {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}` +
-    `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,windspeed_10m_max` +
+    `&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,windspeed_10m_max,et0_fao_evapotranspiration` +
+    `&hourly=soil_temperature_6cm,soil_moisture_3_to_9cm,vapour_pressure_deficit` +
     `&forecast_days=15&timezone=auto`;
   const res = await fetch(url);
   if (!res.ok) throw new Error('Forecast request failed');
   return res.json();
 }
 
+/* Reduce an hourly series to one value per calendar day. Soil/VPD readings
+   are noisy hour to hour, so a daily mean is the honest summary — a single
+   3pm reading would overstate heat, a single 3am reading would understate it. */
+function farmiqDailyMeanFromHourly(hourlyTime, hourlyValues, dailyDates) {
+  const byDay = {};
+  hourlyTime.forEach((ts, i) => {
+    const day = ts.slice(0, 10);
+    const v = hourlyValues[i];
+    if (v === null || v === undefined) return;
+    (byDay[day] = byDay[day] || []).push(v);
+  });
+  return dailyDates.map((date) => {
+    const vals = byDay[date];
+    if (!vals || !vals.length) return null;
+    return vals.reduce((s, v) => s + v, 0) / vals.length;
+  });
+}
+
 function farmiqBuildDays(data) {
   const d = data.daily;
+  const h = data.hourly || {};
+  const soilTempByDay = h.time && h.soil_temperature_6cm
+    ? farmiqDailyMeanFromHourly(h.time, h.soil_temperature_6cm, d.time) : [];
+  const soilMoistureByDay = h.time && h.soil_moisture_3_to_9cm
+    ? farmiqDailyMeanFromHourly(h.time, h.soil_moisture_3_to_9cm, d.time) : [];
+  const vpdByDay = h.time && h.vapour_pressure_deficit
+    ? farmiqDailyMeanFromHourly(h.time, h.vapour_pressure_deficit, d.time) : [];
+
   return d.time.map((date, i) => ({
     date,
     tMax: Math.round(d.temperature_2m_max[i]),
@@ -79,10 +106,87 @@ function farmiqBuildDays(data) {
     rain: d.precipitation_sum[i],
     rainProb: d.precipitation_probability_max[i],
     wind: Math.round(d.windspeed_10m_max[i]),
+    et0: d.et0_fao_evapotranspiration ? Math.round(d.et0_fao_evapotranspiration[i] * 10) / 10 : null,
+    soilTemp: soilTempByDay[i] != null ? Math.round(soilTempByDay[i] * 10) / 10 : null,
+    // Open-Meteo reports volumetric soil moisture as m³/m³ (0-1); show as %.
+    soilMoisture: soilMoistureByDay[i] != null ? Math.round(soilMoistureByDay[i] * 1000) / 10 : null,
+    vpd: vpdByDay[i] != null ? Math.round(vpdByDay[i] * 10) / 10 : null,
   }));
 }
 
+/* Growing degree days for the crops we support, base temperature in °C
+   (the temperature below which a crop doesn't meaningfully develop).
+   Standard agronomic values — corn/soy/veg/grapes at 10°C, wheat at 4°C
+   since it's a cool-season crop that develops well below that threshold. */
+const FARMIQ_GDD_BASE = {
+  corn: 10, soybeans: 10, wheat: 4, vegetables: 10, grapes: 10,
+};
+
+/* Cumulative GDD across the given days — a forward projection over the
+   forecast window, not season-to-date (we don't know the planting date). */
+function farmiqProjectedGDD(crop, days) {
+  const base = FARMIQ_GDD_BASE[crop] ?? 10;
+  let total = 0;
+  return days.map((d) => {
+    const mean = (d.tMax + d.tMin) / 2;
+    total += Math.max(0, mean - base);
+    return Math.round(total);
+  });
+}
+
 /* Crop-specific advisory rule engine — meaningfully differentiated per crop */
+/* Soil temperature a seed needs before it will germinate reliably.
+   Below this, planting risks poor emergence and seedling disease even if
+   air temperature looks fine. Perennial crops (grapes) have no entry —
+   established vines aren't planting-limited by soil temp. */
+const FARMIQ_PLANTING_SOIL_TEMP = { corn: 10, soybeans: 13, wheat: 4, vegetables: 13 };
+
+function farmiqWaterBalanceNote(next7, cropWord) {
+  const totalRain7 = next7.reduce((s, d) => s + d.rain, 0);
+  const et0Days = next7.filter(d => d.et0 != null);
+  if (et0Days.length < 5) {
+    // Not enough ET0 coverage (older cached data, or the API omitted it) —
+    // fall back to the cruder rain-only read rather than say nothing.
+    if (totalRain7 < 15) return `Low rainfall expected this week (${Math.round(totalRain7)}mm) — monitor soil moisture closely for ${cropWord}.`;
+    return null;
+  }
+  const totalET0_7 = et0Days.reduce((s, d) => s + d.et0, 0);
+  const deficit = Math.round(totalET0_7 - totalRain7);
+  if (deficit > 12) {
+    return `Net water deficit this week: about ${deficit}mm more evaporating (${Math.round(totalET0_7)}mm ET₀) than falling as rain (${Math.round(totalRain7)}mm) — irrigation is likely needed for ${cropWord}.`;
+  }
+  if (deficit < -15) {
+    return `Rainfall is expected to exceed crop water use by about ${Math.abs(deficit)}mm this week — irrigation almost certainly isn't needed, and check drainage on heavier ground.`;
+  }
+  return null;
+}
+
+function farmiqPlantingSoilNote(crop, today) {
+  const threshold = FARMIQ_PLANTING_SOIL_TEMP[crop];
+  if (threshold == null || today.soilTemp == null) return null;
+  const st = today.soilTemp;
+  if (st < threshold) {
+    return `Soil temperature is around ${farmiqTemp(st)}${farmiqTempUnit()} at 6cm depth — below the ~${farmiqTemp(threshold)}${farmiqTempUnit()} most growers target for reliable germination. If you haven't planted yet, it's worth waiting for soil to warm.`;
+  }
+  if (st - threshold < 2) {
+    return `Soil temperature is around ${farmiqTemp(st)}${farmiqTempUnit()} at 6cm depth — just above the germination threshold. Marginal for planting; a cold snap could still slow emergence.`;
+  }
+  return null;
+}
+
+function farmiqVpdNote(next7) {
+  const vpdDays = next7.filter(d => d.vpd != null);
+  if (vpdDays.length < 5) return null;
+  const avgVpd = vpdDays.reduce((s, d) => s + d.vpd, 0) / vpdDays.length;
+  if (avgVpd < 0.6) {
+    return 'Low vapour pressure deficit this week — humid, slow-drying air that favours fungal disease. Consider a preventive spray if pressure is already present, and prioritize canopy airflow.';
+  }
+  if (avgVpd > 1.8) {
+    return 'High vapour pressure deficit this week — the air is pulling moisture out of the crop and any spray fast, which raises drift and evaporation risk. Favour early-morning or evening spray windows.';
+  }
+  return null;
+}
+
 function farmiqAdvisory(crop, days) {
   const today = days[0];
   const next7 = days.slice(0, 7);
@@ -92,41 +196,47 @@ function farmiqAdvisory(crop, days) {
   const windyDays = next7.filter(d => d.wind >= 35).length;
 
   const notes = [];
+  const cropWords = { corn: 'corn', soybeans: 'soybeans', wheat: 'wheat', vegetables: 'vegetable crops', grapes: 'the vineyard' };
+
+  const soilNote = farmiqPlantingSoilNote(crop, today);
+  if (soilNote) notes.push(soilNote);
 
   switch (crop) {
     case 'corn':
       if (heatDays >= 3) notes.push(`Sustained heat above ${farmiqTemp(32)}${farmiqTempUnit()} over the next week can stress pollination — consider irrigation timing around silking if in that stage.`);
-      if (totalRain7 < 15) notes.push('Low rainfall expected this week; monitor soil moisture closely during vegetative growth.');
       if (windyDays >= 2) notes.push('High wind days forecast — delay foliar fertilizer or pesticide application to avoid drift.');
-      if (notes.length === 0) notes.push('Conditions look stable for corn this week — good window for routine field work.');
       break;
     case 'soybeans':
       if (today.rainProb > 60) notes.push('High rain probability today — hold off on any planned herbicide or fungicide spraying.');
       if (dryDays >= 5) notes.push('Extended dry stretch ahead; watch for pod-fill stress if plants are flowering.');
       if (heatDays >= 2) notes.push('A few hot days forecast — heat during flowering can reduce pod set, irrigate if possible.');
-      if (notes.length === 0) notes.push('Balanced moisture and temperature expected — favorable week for soybean development.');
       break;
     case 'wheat':
       if (totalRain7 > 40) notes.push('Significant rain expected — if approaching harvest, this raises lodging and grain-quality risk; consider adjusting harvest timing.');
       if (dryDays >= 6 && heatDays >= 3) notes.push('Hot, dry stretch forecast — good conditions for harvest if grain moisture is on target; verify before combining.');
       if (windyDays >= 3) notes.push('Frequent high winds forecast — increased lodging risk in mature stands.');
-      if (notes.length === 0) notes.push('Stable week ahead — good visibility for planning harvest logistics.');
       break;
     case 'vegetables':
       if (today.rainProb > 50) notes.push('Rain likely today — delay transplanting and avoid working wet soil to prevent compaction.');
-      if (heatDays >= 3) notes.push('Multiple hot days ahead — increase irrigation frequency for shallow-rooted vegetable crops.');
       if (windyDays >= 2) notes.push('Windy conditions forecast — protect young transplants and secure row covers.');
-      if (notes.length === 0) notes.push('Mild, steady conditions this week — good window for succession planting.');
       break;
     case 'grapes':
       if (heatDays >= 3) notes.push('Heat stress risk is elevated for the canopy this week — prioritize irrigation and consider afternoon canopy shading.');
-      if (totalRain7 > 25) notes.push('Wet week ahead — increased disease pressure (mildew/botrytis); consider a preventive fungicide pass and improve canopy airflow.');
-      if (dryDays >= 6) notes.push('Extended dry period — deficit irrigation can be fine pre-veraison, but monitor vine stress closely.');
       if (windyDays >= 2) notes.push('Windy days forecast — good for canopy drying and reduced disease pressure.');
-      if (notes.length === 0) notes.push('Favorable ripening conditions this week — low disease and heat stress risk.');
       break;
     default:
       notes.push('Select a crop to see tailored advisory.');
+      return notes;
+  }
+
+  const waterNote = farmiqWaterBalanceNote(next7, cropWords[crop] || 'the crop');
+  if (waterNote) notes.push(waterNote);
+
+  const vpdNote = farmiqVpdNote(next7);
+  if (vpdNote) notes.push(vpdNote);
+
+  if (notes.length === 0) {
+    notes.push(`Conditions look stable for ${cropWords[crop] || 'this crop'} this week — good window for routine field work.`);
   }
 
   return notes;
