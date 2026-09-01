@@ -16,7 +16,7 @@
 <body>
 <main id="main">
 
-<section id="weather-locked" class="hero" hidden>
+<section id="weather-locked" class="page-head" hidden>
   <div class="container locked-panel card">
     <div class="ico">🔒</div>
     <h2>Sign in to see your forecast</h2>
@@ -25,14 +25,14 @@
   </div>
 </section>
 
-<section id="weather-unlocked" hidden>
+<section id="weather-unlocked" class="page-head" hidden>
   <div class="container">
     <span class="eyebrow">🛰️ Weather & Advisory</span>
     <h1 style="font-size:2.1rem">Your 15-day forecast</h1>
-    <p class="hero-sub">Select your crop and location to get a tailored forecast and daily advisory.</p>
+    <p class="lead">Select your crop and location to get a tailored forecast and daily advisory.</p>
 
     <div class="card" style="margin-top:20px">
-      <div class="card-grid grid-2" style="align-items:end">
+      <div class="grid g-2" style="align-items:end">
         <div class="form-field mb-0">
           <label for="crop-select">Crop</label>
           <select id="crop-select">
@@ -44,12 +44,12 @@
           </select>
         </div>
         <div>
-          <button class="btn btn-outline btn-block" id="geo-btn">📍 Use my location</button>
+          <button class="btn btn-ghost btn-block" id="geo-btn">📍 Use my location</button>
         </div>
       </div>
 
       <div id="manual-location" style="margin-top:18px">
-        <div class="card-grid grid-2">
+        <div class="grid g-2">
           <div class="form-field mb-0">
             <label for="manual-lat">Latitude</label>
             <input type="text" id="manual-lat" placeholder="e.g. 38.5025">
@@ -59,7 +59,7 @@
             <input type="text" id="manual-lon" placeholder="e.g. -122.4058">
           </div>
         </div>
-        <button class="btn btn-gold btn-sm" id="manual-load-btn" style="margin-top:12px">Load forecast for this location</button>
+        <button class="btn btn-primary btn-sm" id="manual-load-btn" style="margin-top:12px">Load forecast for this location</button>
         <p class="form-note">GDPR note: location is used only to fetch your forecast and is stored solely in your browser (localStorage). It is never sent to a third party beyond the weather provider (Open-Meteo) needed to serve your forecast.</p>
       </div>
 
@@ -68,7 +68,7 @@
 
     <div id="weather-results" hidden>
       <div class="card" style="margin-top:24px">
-        <div class="dash-row">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap">
           <h3 class="mb-0">15-Day Forecast <span id="loc-label" class="pill" style="margin-left:8px"></span></h3>
         </div>
         <div class="forecast-scroll" id="forecast-scroll"></div>
@@ -77,7 +77,7 @@
       <div class="card" style="margin-top:24px">
         <h3><span id="advisory-crop-icon"></span> Daily Advisory</h3>
         <ul class="price-list" id="advisory-list"></ul>
-        <a href="assistant.html" class="btn btn-outline btn-sm" style="margin-top:8px">Ask Farm Assistant a follow-up →</a>
+        <a href="assistant.html" class="btn btn-ghost btn-sm" style="margin-top:8px">Ask Farm Assistant a follow-up →</a>
       </div>
     </div>
   </div>

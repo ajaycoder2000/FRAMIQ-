@@ -46,7 +46,7 @@ function farmiqRenderHeader() {
   header.innerHTML = `
     <div class="container">
       <a href="index.html" class="brand" aria-label="FarmIQ home">
-        <span class="mark" aria-hidden="true">🌾</span> FarmIQ
+        <span class="mark" aria-hidden="true">🌾</span><span>Farm<em>IQ</em></span>
       </a>
       <nav class="header-quicklinks" aria-label="Quick links">${quickLinks}</nav>
       <div class="header-actions" id="farmiq-header-actions">
@@ -205,6 +205,10 @@ function farmiqInitShell() {
   farmiqInitI18nTags();
   farmiqShowLanguageModal();
 
+  farmiqInitScrollEffects();
+  farmiqInitReveal();
+  farmiqInitScene();
+
   farmiqInitClerk().then((clerk) => {
     farmiqUpdateHeaderAuth();
     document.dispatchEvent(new CustomEvent('farmiq:auth-ready'));
@@ -214,6 +218,48 @@ function farmiqInitShell() {
       document.dispatchEvent(new CustomEvent('farmiq:auth-changed'));
     });
   });
+}
+
+/* Header gains a solid background once the hero scrolls away. */
+function farmiqInitScrollEffects() {
+  const header = document.querySelector('.site-header');
+  if (!header) return;
+  const onScroll = () => header.classList.toggle('scrolled', window.scrollY > 24);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+}
+
+/* Sections fade up as they enter the viewport. */
+function farmiqInitReveal() {
+  const items = document.querySelectorAll('.reveal');
+  if (!items.length) return;
+  if (!('IntersectionObserver' in window)) {
+    items.forEach(el => el.classList.add('in'));
+    return;
+  }
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in');
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' });
+  items.forEach(el => io.observe(el));
+}
+
+/* Boot the WebGL hero scene when the page has a canvas for it. */
+function farmiqInitScene() {
+  const canvas = document.getElementById('farmiq-canvas');
+  if (!canvas || typeof FARMIQ_SCENE === 'undefined') return;
+  // Three.js loads async from CDN; poll briefly, then give up silently
+  // (the CSS gradient fallback already renders behind the canvas).
+  let tries = 0;
+  (function waitForThree() {
+    if (window.THREE) { FARMIQ_SCENE.init(canvas); return; }
+    if (tries++ > 100) return;
+    setTimeout(waitForThree, 60);
+  })();
 }
 
 /* Redirect helper for pages requiring auth-gated content sections.

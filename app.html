@@ -15,7 +15,7 @@
 </head>
 <body>
 <main id="main">
-<section class="hero" style="padding-bottom:20px">
+<section class="page-head">
   <div class="container auth-card">
     <div class="text-center" style="margin-bottom:28px">
       <span class="eyebrow">🧑‍🌾 Farmer App</span>
@@ -34,12 +34,12 @@
 
     <div id="auth-failed" class="card text-center" hidden>
       <p>Sign-in couldn't load — this usually means a network or ad-blocker issue. Please check your connection and reload.</p>
-      <button type="button" class="btn btn-outline btn-block" onclick="window.location.reload()">Reload</button>
+      <button type="button" class="btn btn-ghost btn-block" onclick="window.location.reload()">Reload</button>
     </div>
 
     <div id="clerk-auth-mount" hidden></div>
 
-    <div class="card" style="margin-top:20px;background:var(--bg-alt)">
+    <div class="card" style="margin-top:20px;background:var(--bg-2)">
       <h3 style="font-size:1rem">Signing in unlocks:</h3>
       <ul class="price-list">
         <li>Location-based 15-day weather</li>
