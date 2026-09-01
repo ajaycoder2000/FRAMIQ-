@@ -5,7 +5,6 @@
 const FARMIQ_PAGES = [
   { href: 'index.html', label: 'Home', key: 'Home' },
   { href: 'how-it-works.html', label: 'How It Works', key: 'How It Works' },
-  { href: 'app.html', label: 'Farmer App / Sign In', key: 'Farmer App / Sign In' },
   { href: 'weather.html', label: 'Weather & Advisory', key: 'Weather & Advisory' },
   { href: 'assistant.html', label: 'Farm Assistant', key: 'Farm Assistant' },
   { href: 'pricing.html', label: 'Pricing', key: 'Pricing' },
@@ -169,7 +168,7 @@ function farmiqRenderFooter() {
         </div>
         ${linkCol('Product', [['weather.html','Weather & Advisory','Weather & Advisory'],['assistant.html','Farm Assistant','Farm Assistant'],['pricing.html','Pricing','Pricing'],['how-it-works.html','How It Works','How It Works']])}
         ${linkCol('Company', [['about.html','About & Investors','About & Investors'],['resources.html','Resources / Blog','Resources / Blog'],['faq.html','FAQ','FAQ'],['contact.html','Contact','Contact']])}
-        ${linkCol('Get Started', [['app.html','Sign In','Sign In'],['app.html','Try Farmer App','Try Farmer App'],['pricing.html','See Pricing','See Pricing']])}
+        ${linkCol('Get Started', [['app.html','Sign In','Sign In'],['app.html','Get Your Free Forecast','Get Your Free Forecast'],['pricing.html','See Pricing','See Pricing']])}
         <div>
           <h4>Language</h4>
           <select class="lang-select" id="farmiq-footer-lang" aria-label="Select language">
