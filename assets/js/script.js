@@ -19,6 +19,10 @@ function farmiqCurrentPage() {
   return path;
 }
 
+/* Articles live one directory down (/resources/…), so shared shell links
+   need a prefix to resolve from either depth. */
+const FARMIQ_BASE = window.location.pathname.includes('/resources/') ? '../' : '';
+
 /* Auth state — Clerk is the source of truth. Synchronous calls reflect
    whatever Clerk has resolved so far (false/null until farmiqInitClerk()
    settles), which is why the header renders optimistically signed-out
@@ -41,16 +45,16 @@ function farmiqRenderHeader() {
     { href: 'weather.html', label: 'Weather & Advisory', key: 'Weather & Advisory' },
     { href: 'pricing.html', label: 'Pricing', key: 'Pricing' },
     { href: 'assistant.html', label: 'Farm Assistant', key: 'Farm Assistant' },
-  ].map(p => `<a href="${p.href}" data-i18n="${p.key}" class="${p.href === current ? 'active' : ''}">${p.label}</a>`).join('');
+  ].map(p => `<a href="${FARMIQ_BASE}${p.href}" data-i18n="${p.key}" class="${p.href === current ? 'active' : ''}">${p.label}</a>`).join('');
 
   header.innerHTML = `
     <div class="container">
-      <a href="index.html" class="brand" aria-label="FarmIQ home">
+      <a href="${FARMIQ_BASE}index.html" class="brand" aria-label="FarmIQ home">
         <span class="mark" aria-hidden="true">🌾</span><span>Farm<em>IQ</em></span>
       </a>
       <nav class="header-quicklinks" aria-label="Quick links">${quickLinks}</nav>
       <div class="header-actions" id="farmiq-header-actions">
-        <a href="app.html" class="btn btn-primary btn-sm" id="farmiq-header-auth-btn" data-i18n="Sign In">Sign In</a>
+        <a href="${FARMIQ_BASE}app.html" class="btn btn-primary btn-sm" id="farmiq-header-auth-btn" data-i18n="Sign In">Sign In</a>
         <button class="hamburger" id="farmiq-hamburger" aria-expanded="false" aria-controls="farmiq-nav-panel" aria-label="Open menu">
           <span></span><span></span><span></span>
         </button>
@@ -68,7 +72,7 @@ function farmiqRenderHeader() {
   panel.setAttribute('aria-label', 'Site navigation');
 
   const links = FARMIQ_PAGES.map(p => `
-    <li><a href="${p.href}" data-i18n="${p.key}" class="${p.href === current ? 'active' : ''}" ${p.href === current ? 'aria-current="page"' : ''}>${p.label}</a></li>
+    <li><a href="${FARMIQ_BASE}${p.href}" data-i18n="${p.key}" class="${p.href === current ? 'active' : ''}" ${p.href === current ? 'aria-current="page"' : ''}>${p.label}</a></li>
   `).join('');
 
   const langOptions = FARMIQ_LANGS.map(([code, name]) => `<option value="${code}">${name}</option>`).join('');
@@ -144,7 +148,7 @@ function farmiqUpdateHeaderAuth() {
 
     authSlot.innerHTML = `<button class="btn btn-outline btn-block btn-sm" id="farmiq-logout" data-i18n="Sign Out">Sign Out</button>`;
     document.getElementById('farmiq-logout').addEventListener('click', () => {
-      window.Clerk.signOut().then(() => { window.location.href = 'app.html'; });
+      window.Clerk.signOut().then(() => { window.location.href = FARMIQ_BASE + 'app.html'; });
     });
   } else {
     if (headerAuthBtn) headerAuthBtn.hidden = false;
@@ -157,13 +161,13 @@ function farmiqRenderFooter() {
   const footer = document.createElement('footer');
   footer.className = 'site-footer';
   const linkCol = (title, items) => `
-    <div><h4>${title}</h4><ul>${items.map(([href, label, key]) => `<li><a href="${href}"${key ? ` data-i18n="${key}"` : ''}>${label}</a></li>`).join('')}</ul></div>`;
+    <div><h4>${title}</h4><ul>${items.map(([href, label, key]) => `<li><a href="${FARMIQ_BASE}${href}"${key ? ` data-i18n="${key}"` : ''}>${label}</a></li>`).join('')}</ul></div>`;
 
   footer.innerHTML = `
     <div class="container">
       <div class="footer-grid">
         <div>
-          <a href="index.html" class="brand"><span class="mark" aria-hidden="true">🌾</span> FarmIQ</a>
+          <a href="${FARMIQ_BASE}index.html" class="brand"><span class="mark" aria-hidden="true">🌾</span> FarmIQ</a>
           <p style="margin-top:12px;max-width:32ch" data-i18n="FooterTagline">Weather and crop advisory, direct to farmers.</p>
         </div>
         ${linkCol('Product', [['weather.html','Weather & Advisory','Weather & Advisory'],['assistant.html','Farm Assistant','Farm Assistant'],['pricing.html','Pricing','Pricing'],['how-it-works.html','How It Works','How It Works']])}
@@ -182,8 +186,8 @@ function farmiqRenderFooter() {
       <div class="footer-bottom">
         <span>© 2026 FarmIQ. Built for farmers, not funds.</span>
         <span>
-          <a href="privacy.html">Privacy</a> ·
-          <a href="terms.html">Terms</a> ·
+          <a href="${FARMIQ_BASE}privacy.html">Privacy</a> ·
+          <a href="${FARMIQ_BASE}terms.html">Terms</a> ·
           GDPR-conscious location handling
         </span>
       </div>

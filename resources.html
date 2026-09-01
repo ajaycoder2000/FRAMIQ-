@@ -27,7 +27,11 @@
   src="https://pro-viper-3732.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
   type="text/javascript"
 ></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body>
@@ -43,38 +47,30 @@
 
 <section>
   <div class="container">
-    <div class="grid g-3" id="resource-grid">
-      <a class="card" href="#">
+        <div class="grid g-3" id="resource-grid">
+      <a class="card" href="resources/reading-a-15-day-forecast.html">
         <span class="res-tag">Forecasting</span>
-        <h3>Reading a 15-Day Forecast Like a Pro</h3>
-        <p>What actually matters in a two-week outlook — and what to ignore.</p>
+        <h3>How to read a 15-day forecast without getting burned</h3>
+        <p>Which days to trust, why rain probability beats rainfall totals, and the number most farmers never check.</p>
+        <span class="card-link">Read the guide →</span>
       </a>
-      <a class="card" href="#">
+      <a class="card" href="resources/grape-heat-stress-signs.html">
         <span class="res-tag">Grapes</span>
-        <h3>Grape Growers: Heat Stress Signs to Watch</h3>
-        <p>Canopy cues, cluster sunburn, and when to step up irrigation.</p>
+        <h3>Grape heat stress: the signs to watch</h3>
+        <p>Canopy cues, cluster sunburn, the temperature thresholds that matter, and why you irrigate before the heat, not during it.</p>
+        <span class="card-link">Read the guide →</span>
       </a>
-      <a class="card" href="#">
+      <a class="card" href="resources/timing-wheat-harvest-around-rain.html">
         <span class="res-tag">Wheat</span>
-        <h3>Timing Wheat Harvest Around a Wet Forecast</h3>
-        <p>Balancing grain moisture against a shrinking dry window.</p>
-      </a>
-      <a class="card" href="#">
-        <span class="res-tag">Corn</span>
-        <h3>Silking-Stage Irrigation: A Rain Probability Checklist</h3>
-        <p>Why the pollination window is corn's highest-stakes forecast read.</p>
-      </a>
-      <a class="card" href="#">
-        <span class="res-tag">Vegetables</span>
-        <h3>Protecting Transplants From Sudden Wind Days</h3>
-        <p>Row covers, timing, and reading the wind forecast before you plant.</p>
-      </a>
-      <a class="card" href="#">
-        <span class="res-tag">Disease</span>
-        <h3>Mildew Pressure After a Wet Week — What to Do First</h3>
-        <p>A practical order of operations once your 7-day rain total spikes.</p>
+        <h3>Timing wheat harvest around a wet forecast</h3>
+        <p>Balancing drying cost against sprouting and lodging risk when the weather window is closing.</p>
+        <span class="card-link">Read the guide →</span>
       </a>
     </div>
+
+    <p class="text-center" style="margin-top:40px;color:var(--text-faint);font-size:.9rem">
+      More guides are in progress — corn silking irrigation, protecting transplants from wind, and managing mildew pressure after a wet week.
+    </p>
   </div>
 </section>
 </main>

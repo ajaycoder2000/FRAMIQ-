@@ -3,7 +3,6 @@
    Deep near-black ground, volumetric green glow, gold + emerald accents,
    editorial display type, glass panels over a live 3D scene.
    ═══════════════════════════════════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap');
 
 :root{
   /* Ground */
@@ -423,3 +422,14 @@ section{padding:clamp(64px,9vw,130px) 0;position:relative}
 .page-head h1{font-size:clamp(2.1rem,3.6vw,3.2rem);max-width:20ch}
 .page-head .container.text-center h1,.page-head .text-center h1{margin-left:auto;margin-right:auto}
 .page-head .lead{margin-bottom:0}
+
+/* ── Long-form articles ─────────────────────────────────────────────── */
+.article h2{font-size:clamp(1.4rem,2.2vw,1.85rem);margin-top:2.2em;margin-bottom:.5em}
+.article h3{font-size:1.15rem}
+.article p{font-size:1.03rem;line-height:1.78;margin-bottom:1.25em}
+.article > p:first-of-type{font-size:1.1rem;color:var(--text)}
+.article ul.price-list{margin:1.2em 0}
+.article ul.price-list li{font-size:1rem;line-height:1.65;padding:12px 0}
+.article strong{color:var(--text)}
+.article .card h3{margin-top:0}
+.article .card p{font-size:.98rem}
