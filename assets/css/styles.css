@@ -78,6 +78,10 @@ section{padding:72px 0}
 .site-header .container{display:flex;align-items:center;justify-content:space-between;height:76px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:1.25rem;letter-spacing:-.02em;font-family:var(--font-heading)}
 .brand .mark{font-size:1.4rem}
+.header-quicklinks{display:flex;align-items:center;gap:24px;margin-left:40px;margin-right:auto}
+.header-quicklinks a{font-size:.88rem;color:var(--text-dim);white-space:nowrap}
+.header-quicklinks a:hover,.header-quicklinks a.active{color:var(--text)}
+@media(max-width:860px){.header-quicklinks{display:none}}
 .header-actions{display:flex;align-items:center;gap:12px}
 .hamburger{
   width:48px;height:48px;border-radius:12px;border:1px solid var(--border);

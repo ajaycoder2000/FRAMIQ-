@@ -38,12 +38,20 @@ function farmiqRenderHeader() {
 
   const header = document.createElement('header');
   header.className = 'site-header';
+  const quickLinks = [
+    { href: 'weather.html', label: 'Weather & Advisory', key: 'Weather & Advisory' },
+    { href: 'pricing.html', label: 'Pricing', key: 'Pricing' },
+    { href: 'assistant.html', label: 'Farm Assistant', key: 'Farm Assistant' },
+  ].map(p => `<a href="${p.href}" data-i18n="${p.key}" class="${p.href === current ? 'active' : ''}">${p.label}</a>`).join('');
+
   header.innerHTML = `
     <div class="container">
       <a href="index.html" class="brand" aria-label="FarmIQ home">
         <span class="mark" aria-hidden="true">🌾</span> FarmIQ
       </a>
+      <nav class="header-quicklinks" aria-label="Quick links">${quickLinks}</nav>
       <div class="header-actions" id="farmiq-header-actions">
+        <a href="app.html" class="btn btn-primary btn-sm" id="farmiq-header-auth-btn" data-i18n="Sign In">Sign In</a>
         <button class="hamburger" id="farmiq-hamburger" aria-expanded="false" aria-controls="farmiq-nav-panel" aria-label="Open menu">
           <span></span><span></span><span></span>
         </button>
@@ -124,8 +132,11 @@ function farmiqUpdateHeaderAuth() {
 
   const existingPill = actions.querySelector('.pill');
   if (existingPill) existingPill.remove();
+  const headerAuthBtn = document.getElementById('farmiq-header-auth-btn');
 
   if (farmiqIsAuthed()) {
+    if (headerAuthBtn) headerAuthBtn.hidden = true;
+
     const pill = document.createElement('span');
     pill.className = 'pill unlocked';
     pill.title = farmiqUser().name;
@@ -137,6 +148,7 @@ function farmiqUpdateHeaderAuth() {
       window.Clerk.signOut().then(() => { window.location.href = 'app.html'; });
     });
   } else {
+    if (headerAuthBtn) headerAuthBtn.hidden = false;
     authSlot.innerHTML = '';
   }
   farmiqApplyTranslation(localStorage.getItem('farmiq_lang') || 'en');
