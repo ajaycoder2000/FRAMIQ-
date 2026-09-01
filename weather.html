@@ -4,6 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Weather & Advisory — FarmIQ</title>
+<meta name="description" content="15-day hyperlocal forecasts with crop-specific daily advisory for corn, soybeans, wheat, vegetables and grapes. Metric or imperial units.">
+<link rel="canonical" href="https://farmiq.vercel.app/weather.html">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="FarmIQ">
+<meta property="og:title" content="Weather & Advisory — FarmIQ">
+<meta property="og:description" content="15-day hyperlocal forecasts with crop-specific daily advisory for corn, soybeans, wheat, vegetables and grapes. Metric or imperial units.">
+<meta property="og:url" content="https://farmiq.vercel.app/weather.html">
+<meta property="og:image" content="https://farmiq.vercel.app/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Weather & Advisory — FarmIQ">
+<meta name="twitter:description" content="15-day hyperlocal forecasts with crop-specific daily advisory for corn, soybeans, wheat, vegetables and grapes. Metric or imperial units.">
+<meta name="twitter:image" content="https://farmiq.vercel.app/og-image.png">
+<meta name="theme-color" content="#060a08">
 <script
   async
   crossorigin="anonymous"
@@ -43,9 +59,17 @@
             <option value="grapes" selected>🍇 Grapes</option>
           </select>
         </div>
-        <div>
-          <button class="btn btn-ghost btn-block" id="geo-btn">📍 Use my location</button>
+        <div class="form-field mb-0">
+          <label for="units-select">Units</label>
+          <select id="units-select">
+            <option value="metric">Metric (°C, mm, km/h)</option>
+            <option value="imperial">Imperial (°F, in, mph)</option>
+          </select>
         </div>
+      </div>
+
+      <div style="margin-top:14px">
+        <button class="btn btn-ghost btn-block" id="geo-btn">📍 Use my location</button>
       </div>
 
       <div id="manual-location" style="margin-top:18px">
@@ -113,6 +137,18 @@ function initWeatherPage() {
     renderForCurrentLocation();
   });
 
+  const unitsSelect = document.getElementById('units-select');
+  unitsSelect.value = farmiqGetUnits();
+  unitsSelect.addEventListener('change', () => {
+    farmiqSetUnits(unitsSelect.value);
+    // Re-render from the data already loaded — no refetch needed, since
+    // units are a display concern only.
+    if (window.__farmiqDays) {
+      renderForecast(window.__farmiqDays);
+      renderAdvisory(cropSelect.value, window.__farmiqDays);
+    }
+  });
+
   async function loadAndRender(lat, lon, label) {
     status.textContent = 'Loading forecast…';
     try {
@@ -141,8 +177,8 @@ function initWeatherPage() {
       const wd = dt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
       return `<div class="forecast-day">
         <div class="d">${wd}</div>
-        <div class="t">${d.tMax}° / ${d.tMin}°</div>
-        <div class="meta">💧 ${d.rain}mm · ${d.rainProb}%<br>💨 ${d.wind} km/h</div>
+        <div class="t">${farmiqTemp(d.tMax)}° / ${farmiqTemp(d.tMin)}°</div>
+        <div class="meta">💧 ${farmiqRain(d.rain)}${farmiqRainUnit()} · ${d.rainProb}%<br>💨 ${farmiqWind(d.wind)} ${farmiqWindUnit()}</div>
       </div>`;
     }).join('');
   }

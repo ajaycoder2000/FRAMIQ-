@@ -4,6 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FAQ — FarmIQ</title>
+<meta name="description" content="Answers on pricing, data privacy, forecast accuracy, supported crops and regions, and how the AI Farm Assistant works.">
+<link rel="canonical" href="https://farmiq.vercel.app/faq.html">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="FarmIQ">
+<meta property="og:title" content="FAQ — FarmIQ">
+<meta property="og:description" content="Answers on pricing, data privacy, forecast accuracy, supported crops and regions, and how the AI Farm Assistant works.">
+<meta property="og:url" content="https://farmiq.vercel.app/faq.html">
+<meta property="og:image" content="https://farmiq.vercel.app/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="FAQ — FarmIQ">
+<meta name="twitter:description" content="Answers on pricing, data privacy, forecast accuracy, supported crops and regions, and how the AI Farm Assistant works.">
+<meta name="twitter:image" content="https://farmiq.vercel.app/og-image.png">
+<meta name="theme-color" content="#060a08">
 <script
   async
   crossorigin="anonymous"
@@ -12,6 +28,70 @@
   type="text/javascript"
 ></script>
 <link rel="stylesheet" href="assets/css/styles.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How much does FarmIQ cost?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Free weather forever, then pick the length that fits: $1.99/week for a single busy window, $4.99/month for a growing season, or $39/year (about $3.25/month \u2014 save 35%). All paid plans include full 15-day forecasts, crop advisory, and Farm Assistant. No enterprise tiers, ever. See Pricing."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What do you do with my location data?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Your location is used only to fetch your forecast from Open-Meteo and is stored locally in your browser. We don't sell or share it with third parties, and you can use manual location entry instead of browser geolocation at any time."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How accurate are the forecasts?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Forecast data comes from Open-Meteo, a public weather API blending multiple national weather models. Accuracy is highest in the first 7 days and decreases toward day 15, same as any forecast provider \u2014 we surface rain probability, not just totals, so you can judge confidence."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which crops are supported?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Corn, Soybeans, Wheat, Vegetables, and Grapes at launch, each with meaningfully different advisory logic (e.g. grape heat/irrigation sensitivity vs. wheat harvest timing). More crops are on the roadmap."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which regions do you cover?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Anywhere Open-Meteo has coverage \u2014 in practice, the US and Europe, our initial target markets. Just enable location or enter coordinates manually."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do you sell my data or show ads?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. No ads, no data-selling, no middleman. FarmIQ answers only to the farmer paying for it."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is the Farm Assistant a real AI?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Farm Assistant runs on Google Gemini through a server-side endpoint, with your crop, location and live 15-day forecast passed in as context \u2014 so answers are grounded in your actual conditions rather than generic advice. The API key stays on the server and never reaches your browser. If the service is ever unreachable, FarmIQ falls back to built-in advisory rules. It can't see your field, so treat diagnosis answers as a starting point to verify, not a verdict."
+      }
+    }
+  ]
+}
+</script>
 </head>
 <body>
 <main id="main">

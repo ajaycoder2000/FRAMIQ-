@@ -19,6 +19,7 @@ async function getAssistantResponse(message, context) {
         crop: ctx.crop,
         location: ctx.location,
         days: Array.isArray(ctx.days) ? ctx.days.slice(0, 7) : [],
+        units: (typeof farmiqGetUnits === 'function') ? farmiqGetUnits() : 'metric',
       }),
     });
 
@@ -52,7 +53,10 @@ function farmiqLocalAssistantRules(message, context) {
   }
 
   if (/heat|hot|temperature|stress/.test(msg)) {
-    if (crop === 'grapes') return `Grapes are heat-sensitive during ripening. If highs are forecast above 32°C for multiple days, prioritize irrigation and watch for sunburn on exposed clusters.`;
+    if (crop === 'grapes') {
+      const hot = (typeof farmiqTemp === 'function') ? `${farmiqTemp(32)}${farmiqTempUnit()}` : '32°C';
+      return `Grapes are heat-sensitive during ripening. If highs are forecast above ${hot} for multiple days, prioritize irrigation and watch for sunburn on exposed clusters.`;
+    }
     if (crop === 'wheat') return `Wheat generally tolerates heat well once mature, but heat right before harvest can accelerate grain drying — good for combining, risky if you're not ready.`;
     if (crop === 'corn') return `Heat during corn's silking/pollination stage is the highest-risk window — irrigate if you can and avoid unnecessary field stress during that period.`;
     return `Heat stress impact depends on your crop's current growth stage. Select ${cropLabel === 'your crop' ? 'a crop' : cropLabel} on the Weather & Advisory page for a specific answer.`;

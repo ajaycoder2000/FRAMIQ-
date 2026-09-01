@@ -168,6 +168,7 @@ function farmiqRenderFooter() {
         </div>
         ${linkCol('Product', [['weather.html','Weather & Advisory','Weather & Advisory'],['assistant.html','Farm Assistant','Farm Assistant'],['pricing.html','Pricing','Pricing'],['how-it-works.html','How It Works','How It Works']])}
         ${linkCol('Company', [['about.html','About & Investors','About & Investors'],['resources.html','Resources / Blog','Resources / Blog'],['faq.html','FAQ','FAQ'],['contact.html','Contact','Contact']])}
+        ${linkCol('Legal', [['privacy.html','Privacy Policy'],['terms.html','Terms of Service']])}
         ${linkCol('Get Started', [['app.html','Sign In','Sign In'],['app.html','Get Your Free Forecast','Get Your Free Forecast'],['pricing.html','See Pricing','See Pricing']])}
         <div>
           <h4>Language</h4>
@@ -180,7 +181,11 @@ function farmiqRenderFooter() {
       </div>
       <div class="footer-bottom">
         <span>© 2026 FarmIQ. Built for farmers, not funds.</span>
-        <span>Privacy · Terms · GDPR-conscious location handling</span>
+        <span>
+          <a href="privacy.html">Privacy</a> ·
+          <a href="terms.html">Terms</a> ·
+          GDPR-conscious location handling
+        </span>
       </div>
     </div>`;
   document.body.appendChild(footer);

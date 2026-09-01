@@ -23,28 +23,37 @@ const REQUEST_TIMEOUT_MS = 20000;
 
 /* Compress the forecast into a few readable lines rather than raw JSON —
    cheaper in tokens and easier for the model to reason over. */
-function summarizeForecast(days) {
+function summarizeForecast(days, imperial) {
   if (!Array.isArray(days) || days.length === 0) {
     return 'No forecast is loaded for this farmer yet.';
   }
+  const t = (c) => (imperial ? Math.round(c * 9 / 5 + 32) : Math.round(c));
+  const r = (mm) => (imperial ? (mm / 25.4).toFixed(2) : mm);
+  const w = (kmh) => (imperial ? Math.round(kmh / 1.609) : Math.round(kmh));
+  const tU = imperial ? '°F' : '°C';
+  const rU = imperial ? 'in' : 'mm';
+  const wU = imperial ? 'mph' : 'km/h';
+
   const lines = days.slice(0, 7).map((d) => {
     const date = String(d.date || '').slice(0, 10);
-    return `${date}: high ${d.tMax}°C, low ${d.tMin}°C, rain ${d.rain}mm (${d.rainProb}% chance), wind ${d.wind} km/h`;
+    return `${date}: high ${t(d.tMax)}${tU}, low ${t(d.tMin)}${tU}, rain ${r(d.rain)}${rU} (${d.rainProb}% chance), wind ${w(d.wind)} ${wU}`;
   });
   return lines.join('\n');
 }
 
-function buildSystemPrompt(crop, location, days) {
+function buildSystemPrompt(crop, location, days, units) {
   const cropLabel = CROP_LABELS[crop] || 'an unspecified crop';
   const place = location && location.label ? location.label : 'an unspecified location';
+  const imperial = units === 'imperial';
 
   return `You are FarmIQ's Farm Assistant, helping a working farmer make practical decisions.
 
 THE FARMER'S CONTEXT
 - Crop: ${cropLabel}
 - Location: ${place}
-- Next 7 days of forecast (metric units):
-${summarizeForecast(days)}
+- Preferred units: ${imperial ? 'imperial (°F, inches, mph)' : 'metric (°C, mm, km/h)'} — always answer in these units
+- Next 7 days of forecast:
+${summarizeForecast(days, imperial)}
 
 HOW TO ANSWER
 - Be concise and practical: 2-4 sentences for simple questions. This farmer is often reading on a phone, outdoors, mid-task.
@@ -80,7 +89,7 @@ module.exports = async function handler(req, res) {
   }
 
   const message = body.message.trim().slice(0, MAX_MESSAGE_CHARS);
-  const systemPrompt = buildSystemPrompt(body.crop, body.location, body.days);
+  const systemPrompt = buildSystemPrompt(body.crop, body.location, body.days, body.units);
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);

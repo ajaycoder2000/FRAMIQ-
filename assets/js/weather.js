@@ -1,5 +1,58 @@
 /* FarmIQ Weather & Advisory — Open-Meteo integration + crop advisory rule engine */
 
+
+const FARMIQ_LOCATION_KEY = 'farmiq_location';
+
+/* --- Units -------------------------------------------------------------
+   Forecast data arrives from Open-Meteo in metric and all advisory
+   thresholds are evaluated in metric. Units affect display only, so the
+   rule engine stays consistent regardless of what the farmer reads. */
+
+const FARMIQ_UNITS_KEY = 'farmiq_units';
+
+function farmiqDefaultUnits() {
+  // US growers think in °F/inches/mph. Prefer the saved field location,
+  // then the browser locale, before falling back to metric.
+  try {
+    const loc = JSON.parse(localStorage.getItem(FARMIQ_LOCATION_KEY) || 'null');
+    if (loc && typeof loc.lat === 'number' && typeof loc.lon === 'number') {
+      const inUS = loc.lat > 24 && loc.lat < 50 && loc.lon > -125 && loc.lon < -66;
+      return inUS ? 'imperial' : 'metric';
+    }
+  } catch (e) { /* fall through to locale */ }
+
+  const lang = (navigator.language || '').toLowerCase();
+  return (lang === 'en-us' || lang === 'en-um') ? 'imperial' : 'metric';
+}
+
+function farmiqGetUnits() {
+  return localStorage.getItem(FARMIQ_UNITS_KEY) || farmiqDefaultUnits();
+}
+
+function farmiqSetUnits(units) {
+  localStorage.setItem(FARMIQ_UNITS_KEY, units);
+}
+
+function farmiqIsImperial() {
+  return farmiqGetUnits() === 'imperial';
+}
+
+/* Display converters — input is always metric. */
+function farmiqTemp(celsius) {
+  return farmiqIsImperial() ? Math.round(celsius * 9 / 5 + 32) : Math.round(celsius);
+}
+function farmiqTempUnit() { return farmiqIsImperial() ? '°F' : '°C'; }
+
+function farmiqRain(mm) {
+  return farmiqIsImperial() ? (mm / 25.4).toFixed(2) : mm;
+}
+function farmiqRainUnit() { return farmiqIsImperial() ? 'in' : 'mm'; }
+
+function farmiqWind(kmh) {
+  return farmiqIsImperial() ? Math.round(kmh / 1.609) : Math.round(kmh);
+}
+function farmiqWindUnit() { return farmiqIsImperial() ? 'mph' : 'km/h'; }
+
 const FARMIQ_CROPS = {
   corn: { label: 'Corn', icon: '🌽' },
   soybeans: { label: 'Soybeans', icon: '🫘' },
@@ -42,7 +95,7 @@ function farmiqAdvisory(crop, days) {
 
   switch (crop) {
     case 'corn':
-      if (heatDays >= 3) notes.push('Sustained heat above 32°C over the next week can stress pollination — consider irrigation timing around silking if in that stage.');
+      if (heatDays >= 3) notes.push(`Sustained heat above ${farmiqTemp(32)}${farmiqTempUnit()} over the next week can stress pollination — consider irrigation timing around silking if in that stage.`);
       if (totalRain7 < 15) notes.push('Low rainfall expected this week; monitor soil moisture closely during vegetative growth.');
       if (windyDays >= 2) notes.push('High wind days forecast — delay foliar fertilizer or pesticide application to avoid drift.');
       if (notes.length === 0) notes.push('Conditions look stable for corn this week — good window for routine field work.');
@@ -88,7 +141,6 @@ function farmiqRiskScore(days) {
   return Math.max(4, Math.min(96, raw));
 }
 
-const FARMIQ_LOCATION_KEY = 'farmiq_location';
 
 function farmiqSaveLocation(lat, lon, label) {
   localStorage.setItem(FARMIQ_LOCATION_KEY, JSON.stringify({ lat, lon, label }));

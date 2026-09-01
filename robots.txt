@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# The assistant endpoint is for the app, not for crawlers
+Disallow: /api/
+
+Sitemap: https://farmiq.vercel.app/sitemap.xml
