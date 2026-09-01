@@ -9,6 +9,7 @@ const FARMIQ_SCENE = (() => {
   let mouseX = 0, mouseY = 0, targetRotY = 0, targetRotX = 0;
   let scrollProgress = 0;
   let running = false;
+  let ambient = false;
 
   const COLORS = {
     gold: 0xd9b45a,
@@ -17,6 +18,60 @@ const FARMIQ_SCENE = (() => {
     bark: 0x3a2f22,
     soil: 0x14231a,
   };
+
+  /* --- Seasons ---------------------------------------------------------- */
+
+  /* The tree dresses for the visitor's actual season. If they've saved a
+     location we respect their hemisphere, so a grower in Chile doesn't get
+     a northern-hemisphere autumn in their spring. */
+  const SEASONS = {
+    spring: {
+      name: 'spring',
+      foliageA: 0x7ee8a2, foliageB: 0x46c98a, accent: 0xf2b8d0,
+      emissive: 0x7ee8a2, emissiveIntensity: 0.3,
+      crop: 0x2f8f63, soil: 0x16261b,
+      particleColor: 0xf2b8d0, particleFalls: false, foliageScale: 1,
+    },
+    summer: {
+      name: 'summer',
+      foliageA: 0x3ddc97, foliageB: 0x1f6b4a, accent: 0xd9b45a,
+      emissive: 0x3ddc97, emissiveIntensity: 0.28,
+      crop: 0x1f6b4a, soil: 0x14231a,
+      particleColor: 0xd9b45a, particleFalls: false, foliageScale: 1.05,
+    },
+    autumn: {
+      name: 'autumn',
+      foliageA: 0xd9b45a, foliageB: 0xc2703a, accent: 0xe08a3c,
+      emissive: 0xd9b45a, emissiveIntensity: 0.24,
+      crop: 0x6b5a2a, soil: 0x1d1a12,
+      particleColor: 0xe08a3c, particleFalls: true, foliageScale: 0.92,
+    },
+    winter: {
+      name: 'winter',
+      foliageA: 0x9fb8ad, foliageB: 0x6d8279, accent: 0xdfeaf0,
+      emissive: 0x9fb8ad, emissiveIntensity: 0.12,
+      crop: 0x33413a, soil: 0x141a18,
+      particleColor: 0xdfeaf0, particleFalls: true, foliageScale: 0.55,
+    },
+  };
+
+  function detectSeason() {
+    const month = new Date().getMonth(); // 0-11
+    let southern = false;
+    try {
+      const loc = JSON.parse(localStorage.getItem('farmiq_location') || 'null');
+      if (loc && typeof loc.lat === 'number') southern = loc.lat < 0;
+    } catch (e) { /* no saved location — assume northern */ }
+
+    // Northern-hemisphere mapping; flipped by six months below the equator.
+    const m = southern ? (month + 6) % 12 : month;
+    if (m <= 1 || m === 11) return SEASONS.winter;
+    if (m <= 4) return SEASONS.spring;
+    if (m <= 7) return SEASONS.summer;
+    return SEASONS.autumn;
+  }
+
+  let SEASON = SEASONS.summer;
 
   function prefersReducedMotion() {
     return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -49,16 +104,20 @@ const FARMIQ_SCENE = (() => {
     mesh.castShadow = true;
     group.add(mesh);
 
-    // Foliage clusters at the outer tips.
-    if (depth <= 2) {
+    // Foliage clusters at the outer tips. Winter keeps only a sparse few,
+    // so the branch structure reads as bare.
+    const keepFoliage = SEASON.name !== 'winter' || Math.random() < 0.35;
+    if (depth <= 2 && keepFoliage) {
+      const size = length * (0.75 + Math.random() * 0.5) * SEASON.foliageScale;
       const cluster = new THREE.Mesh(
-        new THREE.IcosahedronGeometry(length * (0.75 + Math.random() * 0.5), 1),
+        new THREE.IcosahedronGeometry(size, 1),
         new THREE.MeshStandardMaterial({
-          color: depth === 1 ? COLORS.emerald : COLORS.deepGreen,
+          color: Math.random() < 0.18 ? SEASON.accent
+               : (depth === 1 ? SEASON.foliageA : SEASON.foliageB),
           roughness: 0.8,
           flatShading: true,
-          emissive: COLORS.emerald,
-          emissiveIntensity: 0.28,
+          emissive: SEASON.emissive,
+          emissiveIntensity: SEASON.emissiveIntensity,
         })
       );
       cluster.position.copy(end);
@@ -95,7 +154,7 @@ const FARMIQ_SCENE = (() => {
 
     const ground = new THREE.Mesh(
       new THREE.CircleGeometry(34, 64),
-      new THREE.MeshStandardMaterial({ color: COLORS.soil, roughness: 1 })
+      new THREE.MeshStandardMaterial({ color: SEASON.soil, roughness: 1 })
     );
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.05;
@@ -105,7 +164,7 @@ const FARMIQ_SCENE = (() => {
     // Instanced crop tufts laid out in rows, thinned toward the horizon.
     const cropGeo = new THREE.ConeGeometry(0.16, 0.75, 5);
     const cropMat = new THREE.MeshStandardMaterial({
-      color: COLORS.deepGreen, roughness: 0.9, flatShading: true,
+      color: SEASON.crop, roughness: 0.9, flatShading: true,
     });
     const rows = 22, perRow = 34;
     const mesh = new THREE.InstancedMesh(cropGeo, cropMat, rows * perRow);
@@ -135,8 +194,7 @@ const FARMIQ_SCENE = (() => {
 
   /* --- Pollen ----------------------------------------------------------- */
 
-  function buildPollen(THREE) {
-    const count = 320;
+  function buildPollen(THREE, count) {
     const positions = new Float32Array(count * 3);
     const speeds = new Float32Array(count);
     for (let i = 0; i < count; i++) {
@@ -148,7 +206,9 @@ const FARMIQ_SCENE = (() => {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     const mat = new THREE.PointsMaterial({
-      color: COLORS.gold, size: 0.09, transparent: true, opacity: 0.75, depthWrite: false,
+      color: SEASON.particleColor,
+      size: SEASON.name === 'winter' ? 0.13 : 0.09,
+      transparent: true, opacity: 0.75, depthWrite: false,
     });
     const points = new THREE.Points(geo, mat);
     points.userData.speeds = speeds;
@@ -157,30 +217,35 @@ const FARMIQ_SCENE = (() => {
 
   /* --- Lifecycle -------------------------------------------------------- */
 
-  function init(canvas) {
+  /* mode: 'hero' — full scene with crop field and scroll-driven camera.
+     mode: 'ambient' — distant, slower, no field, fewer particles. Meant to
+     sit behind a page header without competing with the copy or the CPU. */
+  function init(canvas, mode) {
     const THREE = window.THREE;
     if (!THREE || !canvas || !supportsWebGL() || prefersReducedMotion()) return false;
 
+    ambient = mode === 'ambient';
+    SEASON = detectSeason();
+
     scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x060a08, 0.019);
+    scene.fog = new THREE.FogExp2(0x060a08, ambient ? 0.03 : 0.019);
 
     camera = new THREE.PerspectiveCamera(46, canvas.clientWidth / canvas.clientHeight, 0.1, 220);
-    camera.position.set(0, 8, 26);
-    camera.lookAt(0, 7.5, 0);
+    camera.position.set(0, ambient ? 9 : 8, ambient ? 30 : 26);
+    camera.lookAt(0, ambient ? 9 : 7.5, 0);
 
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8));
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: !ambient, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, ambient ? 1.3 : 1.8));
     renderer.setSize(canvas.clientWidth, canvas.clientHeight, false);
 
     root = new THREE.Group();
-    root.position.x = 5.5;
+    root.position.x = ambient ? 12 : 5.5;
     scene.add(root);
 
-    const tree = buildTree(THREE);
-    root.add(tree);
-    root.add(buildField(THREE));
+    root.add(buildTree(THREE));
+    if (!ambient) root.add(buildField(THREE));
 
-    pollen = buildPollen(THREE);
+    pollen = buildPollen(THREE, ambient ? 90 : 320);
     root.add(pollen);
 
     // Light rig: warm gold key, emerald rim, soft sky fill.
@@ -236,21 +301,26 @@ const FARMIQ_SCENE = (() => {
     const time = t * 0.001;
 
     // Ease toward the pointer target, plus a slow idle drift.
-    root.rotation.y += ((targetRotY + time * 0.045) - root.rotation.y) * 0.035;
-    root.rotation.x += (targetRotX * 0.5 - root.rotation.x) * 0.05;
+    const drift = ambient ? 0.02 : 0.045;
+    root.rotation.y += ((targetRotY * (ambient ? 0.4 : 1) + time * drift) - root.rotation.y) * 0.035;
+    root.rotation.x += (targetRotX * (ambient ? 0.15 : 0.5) - root.rotation.x) * 0.05;
 
-    // Scroll pulls the camera up and back, revealing the field.
-    camera.position.y = 8 + scrollProgress * 5.5;
-    camera.position.z = 26 + scrollProgress * 7;
-    camera.lookAt(0, 7.5 - scrollProgress * 2.5, 0);
+    if (!ambient) {
+      // Scroll pulls the camera up and back, revealing the field.
+      camera.position.y = 8 + scrollProgress * 5.5;
+      camera.position.z = 26 + scrollProgress * 7;
+      camera.lookAt(0, 7.5 - scrollProgress * 2.5, 0);
+    }
 
     // Pollen rises and wraps around.
     if (pollen) {
       const pos = pollen.geometry.attributes.position;
       const speeds = pollen.userData.speeds;
+      const dir = SEASON.particleFalls ? -1 : 1;
       for (let i = 0; i < pos.count; i++) {
-        let y = pos.getY(i) + speeds[i];
-        if (y > 16) y = 0;
+        let y = pos.getY(i) + speeds[i] * dir;
+        if (dir > 0 && y > 16) y = 0;
+        if (dir < 0 && y < 0) y = 16;
         pos.setY(i, y);
         pos.setX(i, pos.getX(i) + Math.sin(time * 0.5 + i) * 0.0035);
       }

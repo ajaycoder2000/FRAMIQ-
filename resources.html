@@ -11,11 +11,13 @@
   src="https://pro-viper-3732.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
   type="text/javascript"
 ></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
 <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body>
 <main id="main">
-<section class="page-head">
+<section class="page-head has-ambient">
+  <canvas id="farmiq-canvas" data-mode="ambient" aria-hidden="true"></canvas>
   <div class="container">
     <span class="eyebrow">📚 Resources</span>
     <h1>Field-ready reading, not marketing fluff</h1>
@@ -60,6 +62,7 @@
   </div>
 </section>
 </main>
+<script src="assets/js/scene.js"></script>
 <script src="assets/js/clerk-init.js"></script>
 <script src="assets/js/i18n.js"></script>
 <script src="assets/js/script.js"></script>

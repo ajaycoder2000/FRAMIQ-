@@ -254,9 +254,10 @@ function farmiqInitScene() {
   if (!canvas || typeof FARMIQ_SCENE === 'undefined') return;
   // Three.js loads async from CDN; poll briefly, then give up silently
   // (the CSS gradient fallback already renders behind the canvas).
+  const mode = canvas.dataset.mode || 'hero';
   let tries = 0;
   (function waitForThree() {
-    if (window.THREE) { FARMIQ_SCENE.init(canvas); return; }
+    if (window.THREE) { FARMIQ_SCENE.init(canvas, mode); return; }
     if (tries++ > 100) return;
     setTimeout(waitForThree, 60);
   })();
