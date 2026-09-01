@@ -3,10 +3,36 @@
    for a call to a real backend endpoint (never call an LLM API directly
    from the browser — no API keys in frontend code). */
 
+/* The single backend hook. Calls the /api/assistant serverless function,
+   which talks to Gemini server-side so no API key is ever exposed here.
+   If that endpoint is missing (e.g. running the static files locally),
+   unconfigured, or failing, we fall back to the local rule engine so the
+   assistant still answers something useful. */
 async function getAssistantResponse(message, context) {
-  // context: { crop, location, days } — provided by the caller from current app state.
-  // MVP: pure local rule engine, no network call, no keys.
-  return farmiqLocalAssistantRules(message, context);
+  const ctx = context || {};
+  try {
+    const res = await fetch('/api/assistant', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message,
+        crop: ctx.crop,
+        location: ctx.location,
+        days: Array.isArray(ctx.days) ? ctx.days.slice(0, 7) : [],
+      }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data && typeof data.reply === 'string' && data.reply.trim()) {
+        return data.reply.trim();
+      }
+    }
+  } catch (err) {
+    // Network failure or no backend — fall through to local rules.
+  }
+
+  return farmiqLocalAssistantRules(message, ctx);
 }
 
 function farmiqLocalAssistantRules(message, context) {

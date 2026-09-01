@@ -58,7 +58,7 @@
 
       <div class="accordion-item">
         <button class="accordion-q" aria-expanded="false">Is the Farm Assistant a real AI? <span class="accordion-icon">+</span></button>
-        <div class="accordion-a"><div class="accordion-a-inner">In this MVP, Farm Assistant uses local rule-based logic grounded in your crop and forecast. A future version will connect to a real LLM through a secure backend, so no API keys are ever exposed in the browser.</div></div>
+        <div class="accordion-a"><div class="accordion-a-inner">Yes. Farm Assistant runs on Google Gemini through a server-side endpoint, with your crop, location and live 15-day forecast passed in as context — so answers are grounded in your actual conditions rather than generic advice. The API key stays on the server and never reaches your browser. If the service is ever unreachable, FarmIQ falls back to built-in advisory rules. It can't see your field, so treat diagnosis answers as a starting point to verify, not a verdict.</div></div>
       </div>
 
     </div>

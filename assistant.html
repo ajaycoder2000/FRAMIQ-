@@ -29,7 +29,7 @@
   <div class="container" style="max-width:780px">
     <span class="eyebrow">🧑‍🌾 Farm Assistant</span>
     <h1 style="font-size:2.1rem">Ask about your crop, your weather, your farm</h1>
-    <p class="lead">Answers are generated locally from your selected crop and current forecast for this MVP — no data leaves your browser.</p>
+    <p class="lead">Ask anything about growing your crop. Answers are grounded in your selected crop, location and live 15-day forecast.</p>
 
     <div class="card" style="margin-top:20px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap">
@@ -39,13 +39,13 @@
       <div class="chat-window" id="chat-window" aria-live="polite"></div>
       <form class="chat-input-row" id="chat-form">
         <label for="chat-input" class="visually-hidden" style="position:absolute;left:-9999px">Message</label>
-        <input type="text" id="chat-input" placeholder="e.g. Should I irrigate this week?" autocomplete="off" required>
+        <input type="text" id="chat-input" placeholder="e.g. Should I irrigate this week? Why are my leaves yellowing?" autocomplete="off" required>
         <button type="submit" class="btn btn-primary">Send</button>
       </form>
     </div>
 
     <div class="card" style="margin-top:20px;background:var(--bg-2)">
-      <p class="form-note mb-0">This MVP uses local rule-based responses via a single <code>getAssistantResponse()</code> hook. A production build would call a backend endpoint (never an LLM API directly from the browser) so API keys stay server-side.</p>
+      <p class="form-note mb-0">Powered by Google Gemini through a server-side endpoint, so the API key never touches your browser. If the assistant is unreachable, FarmIQ falls back to built-in advisory rules so you still get an answer. The assistant can't see your field — treat diagnoses as a starting point, not a verdict.</p>
     </div>
   </div>
 </section>
@@ -79,20 +79,39 @@ function initAssistantPage() {
     div.textContent = text;
     chatWindow.appendChild(div);
     chatWindow.scrollTop = chatWindow.scrollHeight;
+    return div;
   }
 
   const loc = farmiqGetLocation();
   appendMsg(`Hi! I'm your Farm Assistant for ${FARMIQ_CROPS[crop].label}${loc ? ' at ' + loc.label : ''}. Ask me anything about irrigation, heat, harvest timing, wind, or disease risk.`, 'bot');
 
+  const sendBtn = form.querySelector('button[type="submit"]');
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const text = input.value.trim();
     if (!text) return;
+
     appendMsg(text, 'user');
     input.value = '';
-    const context = { crop, location: loc, days: window.__farmiqDays || [] };
-    const reply = await getAssistantResponse(text, context);
-    appendMsg(reply, 'bot');
+
+    // A real model call takes a moment — show that something is happening
+    // and stop a second question being fired into the same turn.
+    input.disabled = true;
+    sendBtn.disabled = true;
+    const thinking = appendMsg('Thinking…', 'bot');
+    thinking.style.opacity = '.6';
+
+    try {
+      const context = { crop, location: loc, days: window.__farmiqDays || [] };
+      const reply = await getAssistantResponse(text, context);
+      thinking.remove();
+      appendMsg(reply, 'bot');
+    } finally {
+      input.disabled = false;
+      sendBtn.disabled = false;
+      input.focus();
+    }
   });
 }
 </script>
