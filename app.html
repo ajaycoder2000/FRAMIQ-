@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sign In — FarmIQ Farmer App</title>
+<script
+  async
+  crossorigin="anonymous"
+  data-clerk-publishable-key="pk_test_cHJvLXZpcGVyLTM3MzIuY2xlcmsuYWNjb3VudHMuZGV2JA"
+  src="https://pro-viper-3732.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+  type="text/javascript"
+></script>
 <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body>
@@ -12,39 +19,25 @@
   <div class="container auth-card">
     <div class="text-center" style="margin-bottom:28px">
       <span class="eyebrow">🧑‍🌾 Farmer App</span>
-      <h1 style="font-size:2rem">Sign in to your farm</h1>
+      <h1 style="font-size:2rem" id="auth-heading">Sign in to your farm</h1>
       <p>Unlocks location-based weather, crop advisory, and Farm Assistant.</p>
     </div>
 
-    <div class="card">
-      <form id="farmiq-login-form" novalidate>
-        <div class="form-field">
-          <label for="fname">Farmer name</label>
-          <input type="text" id="fname" name="fname" autocomplete="name" required>
-          <p class="error-text" id="err-fname">Please enter your name.</p>
-        </div>
-        <div class="form-field">
-          <label for="femail">Email</label>
-          <input type="email" id="femail" name="femail" autocomplete="email" required>
-          <p class="error-text" id="err-femail">Please enter a valid email.</p>
-        </div>
-        <div class="form-field">
-          <label for="fpassword">Password</label>
-          <input type="password" id="fpassword" name="fpassword" autocomplete="current-password" required minlength="6">
-          <p class="error-text" id="err-fpassword">Password must be at least 6 characters.</p>
-        </div>
-        <button type="submit" class="btn btn-primary btn-block">Sign in</button>
-      </form>
-
-      <div class="divider">or</div>
-
-      <button type="button" class="btn btn-secondary btn-block" id="google-signin">
-        <span aria-hidden="true" style="width:16px;height:16px;border-radius:50%;background:conic-gradient(#4285F4 0 25%, #34A853 25% 50%, #FBBC05 50% 75%, #EA4335 75% 100%);display:inline-block"></span>
-        Sign in with Google
-      </button>
-
-      <p class="form-note text-center" style="margin-top:18px" id="auth-status" role="status"></p>
+    <div id="auth-loading" class="card text-center">
+      <p class="mb-0">Loading sign-in…</p>
     </div>
+
+    <div id="auth-already-signed-in" class="card text-center" hidden>
+      <p>You're already signed in.</p>
+      <a href="weather.html" class="btn btn-primary btn-block">Go to your dashboard</a>
+    </div>
+
+    <div id="auth-failed" class="card text-center" hidden>
+      <p>Sign-in couldn't load — this usually means a network or ad-blocker issue. Please check your connection and reload.</p>
+      <button type="button" class="btn btn-outline btn-block" onclick="window.location.reload()">Reload</button>
+    </div>
+
+    <div id="clerk-auth-mount" hidden></div>
 
     <div class="card" style="margin-top:20px;background:var(--bg-alt)">
       <h3 style="font-size:1rem">Signing in unlocks:</h3>
@@ -53,46 +46,45 @@
         <li>Crop-specific daily advisory</li>
         <li>Farm Assistant chat</li>
       </ul>
-      <p class="form-note mb-0">Demo authentication for this MVP — stored locally in your browser only. Production would use Firebase Auth, Supabase Auth, or a similar secure backend.</p>
+      <p class="form-note mb-0">Authentication is handled by Clerk (no phone number is collected). API keys and session secrets never touch this frontend code — Clerk's publishable key only authorizes the client SDK.</p>
     </div>
   </div>
 </section>
 </main>
+<script src="assets/js/clerk-init.js"></script>
+<script src="assets/js/i18n.js"></script>
 <script src="assets/js/script.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const form = document.getElementById('farmiq-login-form');
-  const status = document.getElementById('auth-status');
+  const loading = document.getElementById('auth-loading');
+  const alreadyIn = document.getElementById('auth-already-signed-in');
+  const failed = document.getElementById('auth-failed');
+  const mount = document.getElementById('clerk-auth-mount');
 
-  function signInAs(name, email) {
-    localStorage.setItem('farmiq_authed', 'true');
-    localStorage.setItem('farmiq_user', JSON.stringify({ name, email }));
-    status.textContent = 'Signed in. Redirecting to your Weather & Advisory dashboard…';
-    setTimeout(() => { window.location.href = 'weather.html'; }, 700);
-  }
+  farmiqInitClerk().then((clerk) => {
+    loading.hidden = true;
 
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    let valid = true;
-    const name = document.getElementById('fname');
-    const email = document.getElementById('femail');
-    const pass = document.getElementById('fpassword');
+    if (!clerk) {
+      failed.hidden = false;
+      return;
+    }
 
-    document.getElementById('err-fname').classList.remove('show');
-    document.getElementById('err-femail').classList.remove('show');
-    document.getElementById('err-fpassword').classList.remove('show');
+    if (clerk.user) {
+      alreadyIn.hidden = false;
+      return;
+    }
 
-    if (!name.value.trim()) { document.getElementById('err-fname').classList.add('show'); valid = false; }
-    if (!/^\S+@\S+\.\S+$/.test(email.value)) { document.getElementById('err-femail').classList.add('show'); valid = false; }
-    if (pass.value.length < 6) { document.getElementById('err-fpassword').classList.add('show'); valid = false; }
+    mount.hidden = false;
+    clerk.mountSignIn(mount, {
+      routing: 'virtual',
+      signUpUrl: undefined,
+      afterSignInUrl: 'weather.html',
+      afterSignUpUrl: 'weather.html',
+    });
 
-    if (!valid) return;
-    signInAs(name.value.trim(), email.value.trim());
-  });
-
-  document.getElementById('google-signin').addEventListener('click', () => {
-    // Demo-only stand-in. Real Google sign-in requires OAuth/Firebase/Supabase setup on a backend.
-    signInAs('Google Farmer', 'demo.farmer@gmail.com');
+    clerk.addListener(({ user }) => {
+      if (user) window.location.href = 'weather.html';
+    });
   });
 });
 </script>

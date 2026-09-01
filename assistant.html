@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Farm Assistant — FarmIQ</title>
+<script
+  async
+  crossorigin="anonymous"
+  data-clerk-publishable-key="pk_test_cHJvLXZpcGVyLTM3MzIuY2xlcmsuYWNjb3VudHMuZGV2JA"
+  src="https://pro-viper-3732.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+  type="text/javascript"
+></script>
 <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body>
@@ -44,11 +51,18 @@
 </section>
 
 </main>
+<script src="assets/js/clerk-init.js"></script>
+<script src="assets/js/i18n.js"></script>
 <script src="assets/js/script.js"></script>
 <script src="assets/js/weather.js"></script>
 <script src="assets/js/assistant.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('farmiq:auth-ready', initAssistantPage);
+document.addEventListener('farmiq:auth-changed', () => {
+  farmiqRequireAuthUI(document.getElementById('assistant-locked'), document.getElementById('assistant-unlocked'));
+});
+
+function initAssistantPage() {
   farmiqRequireAuthUI(document.getElementById('assistant-locked'), document.getElementById('assistant-unlocked'));
   if (!farmiqIsAuthed()) return;
 
@@ -80,7 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const reply = await getAssistantResponse(text, context);
     appendMsg(reply, 'bot');
   });
-});
+}
 </script>
 </body>
 </html>

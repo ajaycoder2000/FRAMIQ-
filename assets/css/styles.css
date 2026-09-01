@@ -25,6 +25,7 @@
   --font:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
 }
 *{box-sizing:border-box}
+[hidden]{display:none !important}
 html{scroll-behavior:smooth}
 body{
   margin:0;
@@ -263,3 +264,23 @@ section{padding:72px 0}
 .error-text{color:var(--danger);font-size:.85rem;margin-top:6px;display:none}
 .error-text.show{display:block}
 ::selection{background:var(--green);color:#04140c}
+
+/* Language modal — first thing a new visitor sees */
+.lang-modal-overlay{
+  position:fixed;inset:0;z-index:500;display:flex;align-items:center;justify-content:center;
+  padding:24px;background:rgba(6,10,8,.82);backdrop-filter:blur(6px);
+}
+.lang-modal-card{
+  width:min(560px,100%);background:var(--panel);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:36px;text-align:center;box-shadow:var(--shadow);
+}
+.lang-modal-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:24px;
+}
+@media(max-width:480px){.lang-modal-grid{grid-template-columns:repeat(2,1fr)}}
+.lang-modal-opt{
+  padding:12px 10px;border-radius:var(--radius);border:1px solid var(--border);
+  background:transparent;color:var(--text);font-family:var(--font);font-size:.85rem;
+  cursor:pointer;transition:.15s ease;
+}
+.lang-modal-opt:hover,.lang-modal-opt:focus-visible{border-color:var(--gold);color:var(--gold);outline:none}

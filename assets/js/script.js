@@ -1,22 +1,18 @@
-/* FarmIQ shared shell: header, hamburger nav, footer, language selector, auth state */
+/* FarmIQ shared shell: header, hamburger nav, footer, language selector, auth state.
+   Auth state is backed by Clerk (see clerk-init.js); language dictionary and the
+   first-visit modal live in i18n.js. */
 
 const FARMIQ_PAGES = [
-  { href: 'index.html', label: 'Home' },
-  { href: 'how-it-works.html', label: 'How It Works' },
-  { href: 'app.html', label: 'Farmer App / Sign In' },
-  { href: 'weather.html', label: 'Weather & Advisory' },
-  { href: 'assistant.html', label: 'Farm Assistant' },
-  { href: 'pricing.html', label: 'Pricing' },
-  { href: 'resources.html', label: 'Resources / Blog' },
-  { href: 'about.html', label: 'About & Investors' },
-  { href: 'faq.html', label: 'FAQ' },
-  { href: 'contact.html', label: 'Contact' },
-];
-
-const FARMIQ_LANGS = [
-  ['en', 'English'], ['es', 'Español'], ['fr', 'Français'], ['de', 'Deutsch'],
-  ['it', 'Italiano'], ['nl', 'Nederlands'], ['pl', 'Polski'], ['ro', 'Română'],
-  ['sv', 'Svenska'], ['da', 'Dansk'], ['fi', 'Suomi'], ['pt', 'Português'],
+  { href: 'index.html', label: 'Home', key: 'Home' },
+  { href: 'how-it-works.html', label: 'How It Works', key: 'How It Works' },
+  { href: 'app.html', label: 'Farmer App / Sign In', key: 'Farmer App / Sign In' },
+  { href: 'weather.html', label: 'Weather & Advisory', key: 'Weather & Advisory' },
+  { href: 'assistant.html', label: 'Farm Assistant', key: 'Farm Assistant' },
+  { href: 'pricing.html', label: 'Pricing', key: 'Pricing' },
+  { href: 'resources.html', label: 'Resources / Blog', key: 'Resources / Blog' },
+  { href: 'about.html', label: 'About & Investors', key: 'About & Investors' },
+  { href: 'faq.html', label: 'FAQ', key: 'FAQ' },
+  { href: 'contact.html', label: 'Contact', key: 'Contact' },
 ];
 
 function farmiqCurrentPage() {
@@ -24,18 +20,21 @@ function farmiqCurrentPage() {
   return path;
 }
 
+/* Auth state — Clerk is the source of truth. Synchronous calls reflect
+   whatever Clerk has resolved so far (false/null until farmiqInitClerk()
+   settles), which is why the header renders optimistically signed-out
+   first, then updates once Clerk loads. */
 function farmiqIsAuthed() {
-  try { return localStorage.getItem('farmiq_authed') === 'true'; } catch (e) { return false; }
+  return farmiqClerkIsAuthed();
 }
-
 function farmiqUser() {
-  try { return JSON.parse(localStorage.getItem('farmiq_user') || 'null'); } catch (e) { return null; }
+  const u = farmiqClerkUser();
+  if (!u) return null;
+  return { name: farmiqClerkDisplayName(), email: u.primaryEmailAddress ? u.primaryEmailAddress.emailAddress : '' };
 }
 
 function farmiqRenderHeader() {
   const current = farmiqCurrentPage();
-  const authed = farmiqIsAuthed();
-  const user = farmiqUser();
 
   const header = document.createElement('header');
   header.className = 'site-header';
@@ -44,8 +43,7 @@ function farmiqRenderHeader() {
       <a href="index.html" class="brand" aria-label="FarmIQ home">
         <span class="mark" aria-hidden="true">🌾</span> FarmIQ
       </a>
-      <div class="header-actions">
-        ${authed ? `<span class="pill unlocked" title="${user ? user.name : 'Farmer'}">🧑‍🌾 ${user ? user.name.split(' ')[0] : 'Farmer'}</span>` : ''}
+      <div class="header-actions" id="farmiq-header-actions">
         <button class="hamburger" id="farmiq-hamburger" aria-expanded="false" aria-controls="farmiq-nav-panel" aria-label="Open menu">
           <span></span><span></span><span></span>
         </button>
@@ -63,7 +61,7 @@ function farmiqRenderHeader() {
   panel.setAttribute('aria-label', 'Site navigation');
 
   const links = FARMIQ_PAGES.map(p => `
-    <li><a href="${p.href}" class="${p.href === current ? 'active' : ''}" ${p.href === current ? 'aria-current="page"' : ''}>${p.label}</a></li>
+    <li><a href="${p.href}" data-i18n="${p.key}" class="${p.href === current ? 'active' : ''}" ${p.href === current ? 'aria-current="page"' : ''}>${p.label}</a></li>
   `).join('');
 
   const langOptions = FARMIQ_LANGS.map(([code, name]) => `<option value="${code}">${name}</option>`).join('');
@@ -78,8 +76,8 @@ function farmiqRenderHeader() {
     <div style="padding:0 8px">
       <select class="lang-select" id="farmiq-lang-select" aria-label="Select language">${langOptions}</select>
     </div>
-    ${authed ? `<div style="padding:0 24px"><button class="btn btn-outline btn-block btn-sm" id="farmiq-logout">Sign Out</button></div>` : ''}
-    <p class="nav-footer-note">🛰️ Direct-to-farmer weather intelligence. No middleman, no bundling, no data-selling.</p>
+    <div style="padding:0 24px" id="farmiq-nav-auth-slot"></div>
+    <p class="nav-footer-note" data-i18n="FooterTagline">🛰️ Direct-to-farmer weather intelligence. No middleman, no bundling, no data-selling.</p>
   `;
   document.body.appendChild(scrim);
   document.body.appendChild(panel);
@@ -112,36 +110,54 @@ function farmiqRenderHeader() {
   const savedLang = localStorage.getItem('farmiq_lang') || 'en';
   langSelect.value = savedLang;
   langSelect.addEventListener('change', () => {
-    localStorage.setItem('farmiq_lang', langSelect.value);
-    farmiqApplyTranslation(langSelect.value);
+    farmiqSetLanguage(langSelect.value);
+    localStorage.setItem('farmiq_lang_chosen', 'true');
   });
+}
 
-  const logoutBtn = document.getElementById('farmiq-logout');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', () => {
-      localStorage.removeItem('farmiq_authed');
-      localStorage.removeItem('farmiq_user');
-      window.location.href = 'app.html';
+/* Called once Clerk resolves (and again on any Clerk auth change) to
+   reflect real sign-in state in the header. */
+function farmiqUpdateHeaderAuth() {
+  const actions = document.getElementById('farmiq-header-actions');
+  const authSlot = document.getElementById('farmiq-nav-auth-slot');
+  if (!actions || !authSlot) return;
+
+  const existingPill = actions.querySelector('.pill');
+  if (existingPill) existingPill.remove();
+
+  if (farmiqIsAuthed()) {
+    const pill = document.createElement('span');
+    pill.className = 'pill unlocked';
+    pill.title = farmiqUser().name;
+    pill.textContent = `🧑‍🌾 ${farmiqUser().name}`;
+    actions.prepend(pill);
+
+    authSlot.innerHTML = `<button class="btn btn-outline btn-block btn-sm" id="farmiq-logout" data-i18n="Sign Out">Sign Out</button>`;
+    document.getElementById('farmiq-logout').addEventListener('click', () => {
+      window.Clerk.signOut().then(() => { window.location.href = 'app.html'; });
     });
+  } else {
+    authSlot.innerHTML = '';
   }
+  farmiqApplyTranslation(localStorage.getItem('farmiq_lang') || 'en');
 }
 
 function farmiqRenderFooter() {
   const footer = document.createElement('footer');
   footer.className = 'site-footer';
   const linkCol = (title, items) => `
-    <div><h4>${title}</h4><ul>${items.map(([href, label]) => `<li><a href="${href}">${label}</a></li>`).join('')}</ul></div>`;
+    <div><h4>${title}</h4><ul>${items.map(([href, label, key]) => `<li><a href="${href}"${key ? ` data-i18n="${key}"` : ''}>${label}</a></li>`).join('')}</ul></div>`;
 
   footer.innerHTML = `
     <div class="container">
       <div class="footer-grid">
         <div>
           <a href="index.html" class="brand"><span class="mark" aria-hidden="true">🌾</span> FarmIQ</a>
-          <p style="margin-top:12px;max-width:32ch">Weather intelligence and crop advisory, priced for the farmer actually using it. No middleman, no institutional bundling.</p>
+          <p style="margin-top:12px;max-width:32ch" data-i18n="FooterTagline">Weather and crop advisory, direct to farmers.</p>
         </div>
-        ${linkCol('Product', [['weather.html','Weather & Advisory'],['assistant.html','Farm Assistant'],['pricing.html','Pricing'],['how-it-works.html','How It Works']])}
-        ${linkCol('Company', [['about.html','About & Investors'],['resources.html','Resources / Blog'],['faq.html','FAQ'],['contact.html','Contact']])}
-        ${linkCol('Get Started', [['app.html','Sign In'],['app.html','Try Farmer App'],['pricing.html','See Pricing']])}
+        ${linkCol('Product', [['weather.html','Weather & Advisory','Weather & Advisory'],['assistant.html','Farm Assistant','Farm Assistant'],['pricing.html','Pricing','Pricing'],['how-it-works.html','How It Works','How It Works']])}
+        ${linkCol('Company', [['about.html','About & Investors','About & Investors'],['resources.html','Resources / Blog','Resources / Blog'],['faq.html','FAQ','FAQ'],['contact.html','Contact','Contact']])}
+        ${linkCol('Get Started', [['app.html','Sign In','Sign In'],['app.html','Try Farmer App','Try Farmer App'],['pricing.html','See Pricing','See Pricing']])}
         <div>
           <h4>Language</h4>
           <select class="lang-select" id="farmiq-footer-lang" aria-label="Select language">
@@ -161,44 +177,9 @@ function farmiqRenderFooter() {
   const fl = document.getElementById('farmiq-footer-lang');
   fl.value = localStorage.getItem('farmiq_lang') || 'en';
   fl.addEventListener('change', () => {
-    localStorage.setItem('farmiq_lang', fl.value);
-    farmiqApplyTranslation(fl.value);
+    farmiqSetLanguage(fl.value);
+    localStorage.setItem('farmiq_lang_chosen', 'true');
   });
-}
-
-/* --- Lightweight whole-site translation --- */
-const FARMIQ_DICT = {
-  es: { 'Try Farmer App': 'Probar App', 'See Pricing': 'Ver Precios', 'Sign in': 'Iniciar sesión' },
-  fr: { 'Try Farmer App': 'Essayer l’app', 'See Pricing': 'Voir les tarifs', 'Sign in': 'Se connecter' },
-  de: { 'Try Farmer App': 'App testen', 'See Pricing': 'Preise ansehen', 'Sign in': 'Anmelden' },
-  it: { 'Try Farmer App': 'Prova l’app', 'See Pricing': 'Vedi i prezzi', 'Sign in': 'Accedi' },
-  nl: { 'Try Farmer App': 'Probeer de app', 'See Pricing': 'Bekijk prijzen', 'Sign in': 'Inloggen' },
-  pl: { 'Try Farmer App': 'Wypróbuj appkę', 'See Pricing': 'Zobacz cennik', 'Sign in': 'Zaloguj się' },
-  ro: { 'Try Farmer App': 'Încearcă aplicația', 'See Pricing': 'Vezi prețurile', 'Sign in': 'Autentificare' },
-  sv: { 'Try Farmer App': 'Testa appen', 'See Pricing': 'Se priser', 'Sign in': 'Logga in' },
-  da: { 'Try Farmer App': 'Prøv appen', 'See Pricing': 'Se priser', 'Sign in': 'Log ind' },
-  fi: { 'Try Farmer App': 'Kokeile sovellusta', 'See Pricing': 'Katso hinnat', 'Sign in': 'Kirjaudu sisään' },
-  pt: { 'Try Farmer App': 'Testar o app', 'See Pricing': 'Ver preços', 'Sign in': 'Entrar' },
-};
-
-function farmiqApplyTranslation(langCode) {
-  const dict = FARMIQ_DICT[langCode];
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const key = el.getAttribute('data-i18n');
-    if (dict && dict[key]) {
-      el.textContent = dict[key];
-    } else if (el.dataset.i18nOriginal) {
-      el.textContent = el.dataset.i18nOriginal;
-    }
-  });
-}
-
-function farmiqInitI18nTags() {
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    el.dataset.i18nOriginal = el.textContent;
-  });
-  const savedLang = localStorage.getItem('farmiq_lang') || 'en';
-  if (savedLang !== 'en') farmiqApplyTranslation(savedLang);
 }
 
 function farmiqInitShell() {
@@ -211,9 +192,22 @@ function farmiqInitShell() {
   farmiqRenderHeader();
   farmiqRenderFooter();
   farmiqInitI18nTags();
+  farmiqShowLanguageModal();
+
+  farmiqInitClerk().then((clerk) => {
+    farmiqUpdateHeaderAuth();
+    document.dispatchEvent(new CustomEvent('farmiq:auth-ready'));
+    if (!clerk) return;
+    clerk.addListener(() => {
+      farmiqUpdateHeaderAuth();
+      document.dispatchEvent(new CustomEvent('farmiq:auth-changed'));
+    });
+  });
 }
 
-/* Redirect helper for pages requiring auth-gated content sections */
+/* Redirect helper for pages requiring auth-gated content sections.
+   Call once immediately (renders the locked state instantly) and again
+   after 'farmiq:auth-ready' / 'farmiq:auth-changed' fires. */
 function farmiqRequireAuthUI(lockedEl, unlockedEl) {
   if (farmiqIsAuthed()) {
     if (lockedEl) lockedEl.hidden = true;

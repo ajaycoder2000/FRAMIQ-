@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Weather & Advisory — FarmIQ</title>
+<script
+  async
+  crossorigin="anonymous"
+  data-clerk-publishable-key="pk_test_cHJvLXZpcGVyLTM3MzIuY2xlcmsuYWNjb3VudHMuZGV2JA"
+  src="https://pro-viper-3732.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js"
+  type="text/javascript"
+></script>
 <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body>
@@ -77,10 +84,17 @@
 </section>
 
 </main>
+<script src="assets/js/clerk-init.js"></script>
+<script src="assets/js/i18n.js"></script>
 <script src="assets/js/script.js"></script>
 <script src="assets/js/weather.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('farmiq:auth-ready', initWeatherPage);
+document.addEventListener('farmiq:auth-changed', () => {
+  farmiqRequireAuthUI(document.getElementById('weather-locked'), document.getElementById('weather-unlocked'));
+});
+
+function initWeatherPage() {
   farmiqRequireAuthUI(document.getElementById('weather-locked'), document.getElementById('weather-unlocked'));
   if (!farmiqIsAuthed()) return;
 
@@ -162,7 +176,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   renderForCurrentLocation();
-});
+}
 </script>
 </body>
 </html>
